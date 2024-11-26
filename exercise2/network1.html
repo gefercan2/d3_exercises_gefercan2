@@ -1,0 +1,140 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Network Graph with D3.js</title>
+  <style>
+    /* Style for the background container */
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f5f5f5;
+    }
+
+    #network-container {
+      width: 80%;
+      height: 80%;
+      background-color: #d3d3d3;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+  <!-- Include D3.js library -->
+  <script src="https://d3js.org/d3.v6.min.js"></script>
+</head>
+<body>
+  <div id="network-container">
+    <svg id="network" width="100%" height="100%"></svg>
+  </div>
+
+  <script>
+    // Define the nodes and links as per the data provided
+    const nodes = [
+      { id: 'a' }, { id: 'b' }, { id: 'c' }, { id: 'd' },
+      { id: 'e' }, { id: 'f' }, { id: 'g' }, { id: 'h' },
+      { id: 'i' }, { id: 'j' }, { id: 'k' }
+    ];
+
+    const links = [
+      { source: 'a', target: 'b' }, { source: 'c', target: 'd' },
+      { source: 'd', target: 'a' }, { source: 'a', target: 'c' },
+      { source: 'd', target: 'a' }, { source: 'b', target: 'f' },
+      { source: 'c', target: 'f' }, { source: 'e', target: 'g' },
+      { source: 'a', target: 'g' }, { source: 'f', target: 'h' },
+      { source: 'c', target: 'h' }, { source: 'j', target: 'k' },
+      { source: 'b', target: 'j' }
+    ];
+
+    // Create the D3 force simulation
+    const svg = d3.select('#network');
+    const width = svg.attr('width');
+    const height = svg.attr('height');
+
+    const simulation = d3.forceSimulation(nodes)
+      .force('link', d3.forceLink(links).id(d => d.id).distance(100))
+      .force('charge', d3.forceManyBody().strength(-400))
+      .force('center', d3.forceCenter(width / 2, height / 2));
+
+    // Create links
+    const link = svg.append('g')
+      .attr('stroke', '#999')
+      .attr('stroke-opacity', 0.6)
+      .selectAll('line')
+      .data(links)
+      .join('line')
+      .attr('stroke-width', 1.5);
+
+    // Create nodes
+    const node = svg.append('g')
+      .attr('stroke', '#fff')
+      .attr('stroke-width', 1.5)
+      .selectAll('circle')
+      .data(nodes)
+      .join('circle')
+      .attr('r', 8)
+      .attr('fill', '#007acc')
+      .call(drag(simulation));
+
+    // Add labels to nodes
+    svg.selectAll('text')
+      .data(nodes)
+      .enter()
+      .append('text')
+      .attr('x', d => d.x)
+      .attr('y', d => d.y)
+      .attr('dy', 4)
+      .attr('text-anchor', 'middle')
+      .attr('font-size', '10px')
+      .attr('fill', '#333')
+      .text(d => d.id);
+
+    // Update the positions of the nodes and links
+    simulation.on('tick', () => {
+      link
+        .attr('x1', d => d.source.x)
+        .attr('y1', d => d.source.y)
+        .attr('x2', d => d.target.x)
+        .attr('y2', d => d.target.y);
+
+      node
+        .attr('cx', d => d.x)
+        .attr('cy', d => d.y);
+
+      svg.selectAll('text')
+        .attr('x', d => d.x)
+        .attr('y', d => d.y);
+    });
+
+    // Drag functionality
+    function drag(simulation) {
+      function dragstarted(event, d) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+      }
+
+      function dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+      }
+
+      function dragended(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+      }
+
+      return d3.drag()
+        .on('start', dragstarted)
+        .on('drag', dragged)
+        .on('end', dragended);
+    }
+  </script>
+</body>
+</html>
