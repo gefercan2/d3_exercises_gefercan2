@@ -11,3 +11,5 @@ https://d3-graph-gallery.com/
 Among the places rthat work with d3 are Flourish and RawGraph:
 https://flourish.studio/, https://www.rawgraphs.io/
 Here you will find a set of bilerplate files made with ChatGPT.
+Reference for visual styling: http://www.d3noob.org/2014/02/styles-in-d3js.html
+
