@@ -8,7 +8,7 @@ There is a portal for d3 exercises, Observable, where you can do graphics in d3,
 https://observablehq.com/
 <br>
 Usualy each graphic has already its own template, like shown in this page, although in previous versions of the library
-https://d3-graph-gallery.com/
+https://d3-graph-gallery.com/<br>
 Among the places rthat work with d3 are Flourish and RawGraph:
 https://flourish.studio/, https://www.rawgraphs.io/
 Here you will find a set of bilerplate files made with ChatGPT.
