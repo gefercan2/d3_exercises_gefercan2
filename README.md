@@ -15,17 +15,18 @@ Here you will find a set of bilerplate files made with ChatGPT.
 Reference for visual styling: http://www.d3noob.org/2014/02/styles-in-d3js.html
 <br>
 Also some info on graphs types from their repository:<br>
-https://d3js.org/d3-hierarchy/hierarchy, 
-https://d3js.org/d3-chord, 
-https://d3js.org/d3-hierarchy/pack, 
-https://d3js.org/d3-hierarchy/treemap, 
-https://d3js.org/d3-hierarchy/partition ,
-https://d3js.org/d3-delaunay/voronoi ,
-https://d3js.org/d3-hierarchy/tree,
+https://observablehq.com/@d3/gallery para una galeria de ejemplos
+https://d3js.org/d3-hierarchy/hierarchy, <br>
+https://d3js.org/d3-chord,  <br>
+https://d3js.org/d3-hierarchy/pack,  <br>
+https://d3js.org/d3-hierarchy/treemap,  <br>
+https://d3js.org/d3-hierarchy/partition , <br>
+https://d3js.org/d3-delaunay/voronoi , <br>
+https://d3js.org/d3-hierarchy/tree, <br>
 and some examples in websites
 https://archive.nytimes.com/www.nytimes.com/interactive/2012/09/06/us/politics/convention-word-counts.html
 https://observablehq.com/@d3/tree-of-life
 <br>
-Exercise 1 is for basic dasboard / Exercise 2 is for network graphics / Exercise 3 is for radial charts / Exercise 4 is fro arc diagrams/ Exercise 5 is for Sankey diagrams
+Exercise 1 is for basic dasboard / Exercise 2 is for network graphics / Exercise 3 is for radial charts / Exercise 4 is for arc diagrams/ Exercise 5 is for Sankey diagrams
 
 
