@@ -27,6 +27,6 @@ and some examples in websites
 https://archive.nytimes.com/www.nytimes.com/interactive/2012/09/06/us/politics/convention-word-counts.html
 https://observablehq.com/@d3/tree-of-life
 <br>
-Exercise 1 is for basic dasboard / Exercise 2 is for network graphics / Exercise 3 is for radial charts / Exercise 4 is for arc diagrams/ Exercise 5 is for Sankey diagrams
+Folders: Exercise 1 is for basic dasboard /<br> Exercise 2 is for network graphics / <br>Exercise 3 is for radial charts /<br> Exercise 4 is for arc diagrams/ <br>Exercise 5 is for Sankey diagrams <br>/Exercise 6 is for hierarchical trees
 
 
