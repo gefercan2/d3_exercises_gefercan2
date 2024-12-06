@@ -15,7 +15,7 @@ Here you will find a set of bilerplate files made with ChatGPT.
 Reference for visual styling: http://www.d3noob.org/2014/02/styles-in-d3js.html
 <br>
 Also some info on graphs types from their repository:<br>
-https://observablehq.com/@d3/gallery para una galeria de ejemplos
+https://observablehq.com/@d3/gallery para una galeria de ejemplos <br>
 https://d3js.org/d3-hierarchy/hierarchy, <br>
 https://d3js.org/d3-chord,  <br>
 https://d3js.org/d3-hierarchy/pack,  <br>
