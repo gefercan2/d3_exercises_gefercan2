@@ -9,6 +9,7 @@ https://observablehq.com/
 <br>
 Usualy each graphic has already its own template, like shown in this page, although in previous versions of the library
 https://d3-graph-gallery.com/<br>
+symbols: https://d3js.org/d3-shape/symbol#symbolWye<br>
 Among the places rthat work with d3 are Flourish and RawGraph:
 https://flourish.studio/, https://www.rawgraphs.io/<br>
 Here you will find a set of boilerplate files made with ChatGPT.<br>
