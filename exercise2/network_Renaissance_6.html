@@ -49,16 +49,18 @@
             padding: 10px;
             background-color: white;
             border: 1px solid #ccc;
-            font-size: 12px;
+            font-size: 12px;z-index:3;
         }
 
         /* Canvas container */
         #graph-container {
-            width: 100%;
+            width: 100%;z-index:2;
             height: calc(100vh - 180px);
         }
     </style>
 </head>
+
+
 <body>
     <!-- Title and description -->
     <div id="header">
@@ -81,11 +83,16 @@
 
     <!-- D3.js library -->
     <script src="https://d3js.org/d3.v7.min.js"></script>
+
+
     <script>
+
         // Data for nodes
-        const nodes = [
-            { id: "Veronese", type: "artist", birth: "b. 1528", death: "d. 1588", discipline: "painter", value: 0.5, link: "https://en.wikipedia.org/wiki/Paolo_Veronese" },
-            { id: "Tintoretto", type: "artist", birth: "b. 1518", death: "d. 1594", discipline: "painter", value: 0.5, link: "https://en.wikipedia.org/wiki/Tintoretto" },
+               const nodes = [
+            { id: "Veronese", 
+		type: "artist", birth: "b. 1528", death: "d. 1588", discipline: "painter", value: 0.5, link: "https://en.wikipedia.org/wiki/Paolo_Veronese" },
+            { id: "Tintoretto", 
+		type: "artist", birth: "b. 1518", death: "d. 1594", discipline: "painter", value: 0.5, link: "https://en.wikipedia.org/wiki/Tintoretto" },
             { id: "VENICE", type: "city", birth: "city state", death: "(Veneto)", discipline: "Republic of Venice (La Serenissima)", value: 5, link: "https://en.wikipedia.org/wiki/Republic_of_Venice" },
             { id: "Jacopo Bassano", type: "artist", 
                 birth: "b. 1510", 
@@ -93,19 +100,20 @@
                 discipline: "painter", 
                 value: 0.5 },
                  {id: "Andrea Palladio", 
-                type: "artist", birth: "b. 1508", death: "d. 1580", discipline: "architect", 
+                type: "artist", birth: "b. 1508", death: "d. 1580", discipline: "architect",
+		link:"https://en.wikipedia.org/wiki/Andrea_Palladio", 
                 value: 0.5 },
 
                 { id: "Ghirlandaio", type: "artist", birth: "b. 1508", death: "d. 1580", 
-                discipline: "architect", 
+                discipline: "architect",link:"https://en.wikipedia.org/wiki/Domenico_Ghirlandaio", 
                 value: 0.5 },
-                {id: "NAPLES", type: "city", birth: "Kingdom", death: " Campania",  discipline: " Sicilia, Kingdom of Naples", 
+                {id: "NAPLES", type: "city", birth: "Kingdom (Spanish Crown)", death: " Campania",  discipline: " Sicilia, Kingdom of Naples", link:"https://en.wikipedia.org/wiki/Kingdom_of_Naples",
                 value: "5"},
 
-  	    	    {id: "FLORENCE", type: "city", birth: "city state", death: "(Tuscany)",discipline: "Republic of Florence",
-      		      value: "4"},
+  	    	    {id: "FLORENCE", type: "city", birth: "Medici dinasty", death: "(Tuscany)",discipline: "Republic of Florence",link:"https://en.wikipedia.org/wiki/Republic_of_Florence",
+      		      value: "5"},
 
-                {id: "MANTUA", type: "city", birth: "city state", death: "", discipline: "Duchy of Mantua",
+                {id: "MANTUA", type: "city", birth: "House of Gonzaga", death: "", discipline: "Duchy of Mantua",link:"https://en.wikipedia.org/wiki/Duchy_of_Mantua",
               value: "3"},
 
                 {id: "MILAN",
@@ -123,43 +131,47 @@
                 },
                 {id: "ROME",
                   type: "city",
-                  birth: "city state",
+                  birth: "Seat of the Pope",
                   death: "(Lazio)",
                   discipline: "Papal Estates",
-                  value: "6"},
+		link:"https://en.wikipedia.org/wiki/Papal_States",
+                  value: "5"
+		},
                 {id: "SIENA",
                   type: "city",
-                    birth: "city state",
+                    birth: "citizen-based",
                     death: "(Tuscany)",
                     discipline: "Republic of Siena",
+		link:"https://en.wikipedia.org/wiki/Republic_of_Siena",
                     value: "2"},
                   {id: "URBINO",
                     type: "city",
                     birth: "city state",
-                    death: "",
+                    death: "House of Montefeltro",link:"https://en.wikipedia.org/wiki/Duchy_of_Urbino",
                     discipline: "Duchy of Urbino",
                 value: "2"},
-                  {id: "VENICE",
-                    type: "city",
-                    birth: "city state",
-                    death: "(Veneto)",
-                    discipline: "Republic of Venice (La Serenissima)",
-                    value: "5"},
-              {
+    		{
+                id: "PERUGIA",
+                type: "city",
+                birth: "",
+                death: "(Umbria)",
+                discipline: "",link:"https://en.wikipedia.org/wiki/Perugia",
+                value: "2"},
+                {
                 id: "Pontormo",
                 type: "artist",
                 birth: " b. 1494",
-                death: " Pontorme ",
-                discipline: " d. 1557",
-                "link": " Florence ",
-                value: "painter"
+                death: " d. 1557 ",
+                discipline: "painter ",
+                link: " https://en.wikipedia.org/wiki/Pontormo",
+                value: "0.5"
               },
               {
                 id: "Andrea del Sarto",
                 type: "artist",
                 birth: "b. 1486",
                 death: "d. 1531",
-                discipline: "painter",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Andrea_del_Sarto",
                 value: "0.5"
               },
               {
@@ -167,7 +179,7 @@
                 type: "artist",
                 birth: "b. 1485",
                 death: "d. 1576",
-                discipline: "painter",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Titian",
                 value: "0.5"
               },
               {
@@ -188,12 +200,21 @@
                 value: "0.5",link: "https://en.wikipedia.org/wiki/Michelangelo",
               },
               {
+                id: "Lorenzo Ghiberti",
+                type: "artist",
+                birth: "b. 1378",
+                death: "d. 1455",
+                discipline: "sculptor",
+                link: "https://en.wikipedia.org/wiki/Lorenzo_Ghiberti",
+                value: "0.5"
+              },
+		{
                 id: "Giorgione",
                 type: "artist",
                 birth: "b. 1473-78",
                 death: "d. 1510",
                 discipline: "painter",
-                "link": "",
+                link: "https://en.wikipedia.org/wiki/Giorgione",
                 value: "0.5"
               },
               {
@@ -203,7 +224,7 @@
                 death: " d. 1519 Loire ",
                 discipline: "painter",
                 link: "https://en.wikipedia.org/wiki/Leonardo_da_Vinci",
-                value: ""
+                value: "0.5"
               },
               {
                 id: "Perugino",
@@ -211,7 +232,7 @@
                 birth: "b. 1446",
                 death: "d. 1523",
                 discipline: "painter",
-
+		link:"https://en.wikipedia.org/wiki/Pietro_Perugino",
                 value: "0.5"
               },
               {
@@ -219,7 +240,7 @@
                 type: "artist",
                 birth: "b. 1444",
                 death: "d. 1514",
-                discipline: "architect",
+                discipline: "architect",link:"https://en.wikipedia.org/wiki/Donato_Bramante",
                 value: "0.5"
               },
               {
@@ -227,7 +248,7 @@
                 type: "artist",
                 birth: "b. 1435",
                 death: "d. 1488",
-                discipline: "sculptor",
+                discipline: "sculptor",link:"https://en.wikipedia.org/wiki/Andrea_del_Verrocchio",
                 value: "0.5"
               },
               {
@@ -235,7 +256,7 @@
                 type: "artist",
                 birth: "b. 1431",
                 death: "d. 1506",
-                discipline: "painter",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Andrea_Mantegna",
                 value: "0.5"
               },
               {
@@ -243,7 +264,7 @@
                 type: "artist",
                 birth: "b. 1430",
                 death: "d. 1516",
-                discipline: "painter",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Giovanni_Bellini",
                 value: "0.5"
               },
               {
@@ -251,7 +272,7 @@
                 type: "artist",
                 birth: "b. 1429",
                 death: "d. 1507",
-                discipline: "painter",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Gentile_Bellini",
                 value: "0.5"
               },
               {
@@ -259,7 +280,7 @@
                 type: "artist",
                 birth: "b. 1425,1430",
                 death: "d. 1479",
-                discipline: "painter",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Antonello_da_Messina",
                 value: "0.5"
               },
               {
@@ -267,7 +288,23 @@
                 type: "artist",
                 birth: "b. 1415",
                 death: "d. 1492",
-                discipline: "painter",
+                discipline: "painter", link:"https://en.wikipedia.org/wiki/Piero_della_Francesca",
+                value: "0.5"
+              },
+		{
+                id: "Luca Della Robia",
+                type: "artist",
+                birth: "b. 1399",
+                death: "d. 1482",
+                discipline: "sculptor",link:"https://en.wikipedia.org/wiki/Luca_della_Robbia",
+                value: "0.5"
+              },
+		{
+                id: "Andrea Della Robia",
+                type: "artist",
+                birth: "b. 1435",
+                death: "d. 1525",
+                discipline: "sculptor",link:"https://en.wikipedia.org/wiki/Andrea_della_Robbia",
                 value: "0.5"
               },
               {
@@ -275,21 +312,21 @@
                 type: "artist",
                 birth: "b. 1406",
                 death: "d. 1469",
-                discipline: "painter",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Filippo_Lippi",
                 value: "0.5"
               },
               { id: "Alberti",
                 type: "artist",
                 birth: "b. 1404",
                 death: "d. 1472",
-                discipline: "architect",
+                discipline: "architect",link:"https://en.wikipedia.org/wiki/Leon_Battista_Alberti",
                 value: "0.5"
               },
               {id: "Massaccio",
                 type: "artist",
                 birth: "b. 1401",
                 death: "d. 1428",
-                discipline: "painter",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Masaccio",
                 value: "0.5"
               },
               {
@@ -297,7 +334,7 @@
                 type: "artist",
                 birth: "b. 1397",
                 death: "d. 1475",
-                discipline: "painter",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Paolo_Uccello",
                 value: "0.5"
               },
               {
@@ -305,7 +342,7 @@
                 type: "artist",
                 birth: "b. 1395",
                 death: "d. 1455",
-                discipline: "painter",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Fra_Angelico",
                 value: "0.5"
               },
               {
@@ -314,6 +351,7 @@
                 birth: "b. 1386",
                 death: "d. 1466",
                 discipline: "sculptor",
+		link:"https://en.wikipedia.org/wiki/Donatello",
                 value: "0.5"
               },
               {
@@ -321,7 +359,7 @@
                 type: "artist",
                 birth: "b. 1377",
                 death: "d. 1446",
-                discipline: "sculptor",
+                discipline: "sculptor",link:"https://en.wikipedia.org/wiki/Filippo_Brunelleschi",
                 value: "0.5"
               },
               {
@@ -329,15 +367,23 @@
                 type: "artist",
                 birth: "b. 1300",
                 death: " d",
-                discipline: " 1366 ",
-                value: ""
+                discipline: " painter ", link:"https://en.wikipedia.org/wiki/Taddeo_Gaddi",
+                value: "0.5"
+              },
+		{
+                id: "Antonio Bazzi",
+                type: "artist",
+                birth: "b. 1477",
+                death: " d. 1549",
+                discipline: " painter ", link:"https://en.wikipedia.org/wiki/Il_Sodoma",
+                value: "0.5"
               },
               {
                 id: "Duccio Buonisegna",
                 type: "artist",
                 birth: "b. 1255",
                 death: "d. 1318–1319",
-                discipline: "painter",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Duccio",
                 value: "0.5"
               },
               {
@@ -345,7 +391,7 @@
                 type: "artist",
                 birth: "b. 1250",
                 death: "d. 1315",
-                discipline: "sculptor",
+                discipline: "sculptor",link:"https://en.wikipedia.org/wiki/Giovanni_Pisano",
                 value: "0.5"
               },
               {
@@ -353,7 +399,7 @@
                 type: "artist",
                 birth: " b. 1499",
                 death: " Roma ",
-                discipline: " d. 1546",
+                discipline: " d. 1546",link:"https://en.wikipedia.org/wiki/Giulio_Romano",
                 value: "0.5"
               },
               {
@@ -361,7 +407,7 @@
                 type: "artist",
                 birth: "b. 1445",
                 death: "d. 1510",
-                discipline: "painter",
+                discipline: "painter", link:"https://en.wikipedia.org/wiki/Sandro_Botticelli",
                 value: "0.5"
               },
               {
@@ -369,7 +415,7 @@
                 type: "artist",
                 birth: "b. 1396",
                 death: " d. 1470",
-                discipline: " Venice ",
+                discipline: " Venice ",link:"https://en.wikipedia.org/wiki/Jacopo_Bellini",
                 value: "0.5"
               },
               {
@@ -377,7 +423,79 @@
                 type: "artist",
                 birth: "b. 1267",
                 death: "d. 1337",
-                discipline: "painter",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Giotto",
+                value: "0.5"
+              },
+	      {
+                id: "Lorenzo Lotto",
+                type: "artist",
+                birth: "b. 1480",
+                death: "d. 1556",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Lorenzo_Lotto",
+                value: "0.5"
+              },
+		{
+                id: "Sebastiano del Piombo",
+                type: "artist",
+                birth: "b. 1485",
+                death: "d. 1547",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Sebastiano_del_Piombo",
+                value: "0.5"
+              },
+ 		{
+                id: "Signorelli",
+                type: "artist",
+                birth: "b. 1441",
+                death: "d. 1523",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Luca_Signorelli",
+                value: "0.5"
+              },
+	      {
+                id: "Pinturicchio",
+                type: "artist",
+                birth: "b. 1454",
+                death: "d. 1513",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Pinturicchio",
+                value: "0.5"
+              },
+	      {
+                id: "Antonio Pollaiuolo",
+                type: "artist",
+                birth: "b. 1429",
+                death: "d. 1498",
+                discipline: "painter, sculptor",link:"https://en.wikipedia.org/wiki/Antonio_del_Pollaiuolo",
+                value: "0.5"
+              },
+		{
+                id: "Andrea Schiavone",
+                type: "artist",
+                birth: "b. 1510",
+                death: "d. 1563",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Andrea_Schiavone",
+                value: "0.5"
+              },
+		{
+                id: "Parmigianino",
+                type: "artist",
+                birth: "b. 1503",
+                death: "d. 1540",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Parmigianino",
+                value: "0.5"
+              },
+		{
+                id: "Carlo Crivelli",
+                type: "artist",
+                birth: "b. 1430",
+                death: "d. 1495",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Carlo_Crivelli",
+                value: "0.5"
+              },
+ 		{
+                id: "Vittore Carpaccio",
+                type: "artist",
+                birth: "b. 1460",
+                death: "d. 1525",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Vittore_Carpaccio",
                 value: "0.5"
               },
               {
@@ -385,48 +503,48 @@
                 type: "artist",
                 birth: "b. 1240",
                 death: "d. 1302",
-                discipline: "painter",
+                discipline: "painter",link:"https://en.wikipedia.org/wiki/Cimabue",
                 value: "0.5"
               },
-              {
-                id: "PERUGIA",
-                type: "city",
-                birth: "",
-                death: "",
-                discipline: "",
-                value: "2"}
+          
         ];
 
         // Data for links
-        const links = [
-            { source: "VENICE", target: "Veronese" },
-            { source: "VENICE", target: "Tintoretto" },
-            {source: "VENICE", target: "Jacopo Bassano" },
-            	{source: "VENICE", target: "Andrea Palladio" },
-	    	      {source:"FLORENCE", target:"ROME" },
-  	    	    {source:"FLORENCE", target:"Pontormo"},
- 	    	      {source:"FLORENCE",target:"Andrea del Sarto"},
-  	    	    {source:"FLORENCE",target:"Alberti"},
- 	    	      {source:"FLORENCE",target:"Sandro Botticelli"},
+            const links = [
+              {source: "VENICE", target: "Veronese" },
+              {source: "VENICE", target: "Tintoretto" },
+              {source: "VENICE", target: "Jacopo Bassano" },
+              {source: "VENICE", target: "Andrea Palladio" },
+	      {source:"FLORENCE", target:"ROME" },
+  	      {source:"FLORENCE", target:"Pontormo"},
+ 	      {source:"FLORENCE",target:"Andrea del Sarto"},
+  	      {source:"FLORENCE",target:"Alberti"},
+ 	      {source:"FLORENCE",target:"Sandro Botticelli"},
               {source:"FLORENCE",target:"Brunelleschi"},
+	      {source:"FLORENCE",target:"Lorenzo Ghiberti"},
               {source:"FLORENCE",target:"Cimabue"},
               {source:"FLORENCE", target:"Duccio Buonisegna"},
               {source:"FLORENCE", target:"Donatello"},
-  		        {source:"FLORENCE",target:"Filippo Lippi"},
- 		          {source:"FLORENCE",target:"Fra Angelico"},
+  	      {source:"FLORENCE",target:"Filippo Lippi"},
+ 	      {source:"FLORENCE",target:"Fra Angelico"},
               {source:"FLORENCE",target:"Ghirlandaio" },
               {source:"FLORENCE",target:"Giotto di Bondone"},
               {source:"FLORENCE",target:"Leonardo"},
               {source:"FLORENCE",target:"Mantegna"},
               {source:"FLORENCE",target:"Massaccio"},
+	      {source:"FLORENCE",target:"Parmigianino"},
               {source:"FLORENCE",target:"Michelangelo"},
               {source:"FLORENCE",target:"Perugino"},
               {source:"FLORENCE",target:"Piero della Francesca"},
- 		          {source:"FLORENCE",target:"Raphael"},
-              {source:"FLORENCE",target:"ROME"},
+              {source:"FLORENCE",target:"Luca Della Robia"},
+              {source:"FLORENCE", target:"Signorelli"},
+              {source:"FLORENCE",target:"Andrea Della Robia"},
+ 	      {source:"FLORENCE",target:"Raphael"},
+              {source:"FLORENCE",target:"Antonio Pollaiuolo"},
               {source:"FLORENCE",target:"Taddeo Gaddi"},
               {source:"FLORENCE",target:"Verrocchio"},
               {source:"FLORENCE",target:"Paolo Ucello"},
+              {source:"FLORENCE",target:"ROME"},
               {source:"Gentile Bellini",target:"Giovanni Bellini"},
               {source:"MANTUA",target:"Giulio Romano"},
               {source:"MANTUA",target:"Alberti"},
@@ -441,8 +559,8 @@
               {source:"PADUA",target:"Giotto di Bondone"},
               {source:"PADUA",target:"Jacopo Bellini"},
               {source:"PADUA",target:"Mantegna"},
-              {source:"Paolo Ucello",target:"FLORENCE"},
               {source:"PERUGIA",target:"Perugino"},
+              {source:"PERUGIA", target:"Pinturicchio"},
               {source:"ROME",target:"Sandro Botticelli"},
               {source:"ROME",target:"Fra Angelico"},
               {source:"ROME",target:"Giulio Romano"},
@@ -454,13 +572,19 @@
               {source:"ROME",target:"Michelangelo"},
               {source:"ROME",target:"Perugino"},
               {source:"ROME",target:"Raphael"},
-              {source:"ROME",target:"NAPLES"},
+	      {source:"ROME",target:"Parmigianino"},
+	      {source:"ROME", target:"Signorelli"},
+	      {source:"ROME", target:"Antonio Bazzi"},
+	      {source:"ROME", target:"Pinturicchio"},
+	      {source:"ROME", target:"Sebastiano del Piombo"},
               {source:"SIENA", target:"Duccio Buonisegna"},
+	      {source:"SIENA", target:"Antonio Bazzi"},
+	      {source:"SIENA", target:"Signorelli"},
               {source:"SIENA", target:"FLORENCE"},
               {source:"SIENA",target:"Giovanni Pisano"},
               {source:"URBINO",target:"Bramante"},
               {source:"URBINO",target:"Piero della Francesca"},
- 		      {source:"URBINO",target:"Raphael"},
+ 	      {source:"URBINO",target:"Raphael"},
               {source:"VENICE",target:"Andrea Palladio"},
               {source:"VENICE",target:"Antonello de Messina"},
               {source:"VENICE",target:"Gentile Bellini"},
@@ -469,8 +593,16 @@
               {source:"VENICE",target:"Jacopo Bellini"},
               {source:"VENICE",target:"Mantegna"},
               {source:"VENICE",target:"ROME"},
+	      {source:"VENICE",target:"PADUA"},
               {source:"VENICE",target:"Titian"},
-              {source:"VENICE", target:"Verrocchio"}
+              {source:"VENICE", target:"Verrocchio"},
+	      {source:"VENICE", target:"Sebastiano del Piombo"},
+	      {source:"VENICE", target:"Lorenzo Lotto"},
+	      {source:"VENICE", target:"Carlo Crivelli"},
+              {source:"VENICE", target:"Vittore Carpaccio"},
+	      {source:"VENICE", target:"Andrea Schiavone"},
+	      {source:"SIENA", target:"Pinturicchio"}
+             
         ];
 
         // Graph dimensions
