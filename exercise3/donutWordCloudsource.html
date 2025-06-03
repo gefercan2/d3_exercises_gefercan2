@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Ordered Donut Chart with Tooltips and Word Cloud</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-cloud/1.2.5/d3.layout.cloud.min.js"></script>
+  <style>
+    body { font-family: sans-serif; }
+    svg { display: block; margin: auto; }
+    .tooltip {
+      position: absolute;
+      background: rgba(0,0,0,0.8);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+  </style>
+</head>
+
+
+
+
+
+<body>
+  <svg width="1000" height="1000"></svg>
+  <div class="tooltip" id="tooltip"></div>
+
+  <script>
+    const paragraphs = [
+      `My name is [Your Name], and I am a visual artist and designer whose practice centers on drawing as both a thinking tool and an expressive language. I am writing to express my sincere interest in the [Residency Name] as a space to deepen a body of work that investigates [insert project theme—e.g., memory, place, movement, etc.] through the medium of drawing.`,
+`Drawing, for me, beyond its current boundaries, allowing for daily immersion, exploration of materials, and reflection.`,
+      `Drawing, for me, is not only a visual output but a method of inquiry—of observing, understanding, and recording. I am particularly drawn to your residency for its emphasis on time, space, and experimentation. I see it as the perfect context to expand my drawing practice beyond its current boundaries, allowing for daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion,daily immersion, exploration of materials, and reflection.`,
+`Drawing, for me, is not only a visual output but a method of inquiry—of observing, understanding, and recording. I am particularly drawn to your residency for its emphasis on time, space, and experimentation. I see it as the perfect context to expand my drawing practice beyond its current boundaries, allowing for daily immersion, exploration of materials, and reflection.`,
+      `The project I intend to begin during the residency is titled [Project Title]. It will be an evolving series of drawings that [describe concept briefly—e.g., map emotional geographies, abstract environmental data, reinterpret local histories, etc.]. Starting from a place of observation, the drawings will develop through repetition, abstraction, and layering—allowing the process itself to lead the direction of the work.`,
+      `My approach during the residency will be highly process-based: I intend to engage in drawing as a daily ritual, using a variety of media (graphite, ink, collage, etc.) while responding to the physical and emotional atmosphere of the residency setting. I hope to also invite feedback through open studio discussions or informal critiques if the structure allows.`,
+      `Being selected would offer me the invaluable gift of uninterrupted time and a nurturing environment to experiment and reflect. It would also provide an opportunity to connect with a community of artists and thinkers, which I believe would meaningfully influence the evolution of this drawing-based body of work.`,
+      `Thank you very much for considering my application. I would be honored to contribute to and grow within your residency program.`,
+ `Thank on which the phrarominently whatsoever you may copy it, give it away or re-use it under the terms whatsoever may copy it, give it away or re-use it under the terms whatsoever may copy it, give it away or re-use it under the terms whatsoever  may copy it, give it away or re-use it under the terms whatsoever may copy it, give it away or re-use it under the terms whatsoever  copy it, give it away or re-use it under the termswhenever any copy of wsork  nreement before downloading, copying, displaying, pse Project Gutenberg appears, or program.`
+
+    ];
+
+    const tooltip = d3.select("#tooltip");
+
+    const wordCounts = paragraphs.map(p => p.trim().split(/\s+/).length);
+    const totalWords = wordCounts.reduce((a, b) => a + b, 0);
+    const spaceSegment = Math.floor(totalWords / 200);
+
+    const data = paragraphs.map((p, i) => ({
+      label: `Paragraph ${i + 1}`,
+      value: wordCounts[i],
+      text: p
+    }));
+
+    data.push({
+      label: 'Whitespace',
+      value: spaceSegment,
+      text: 'Reserved segment for whitespace (10% of total word count)'
+    });
+
+    const width = 1000, height = 1000, radius = 420;
+    const svg = d3.select("svg")
+      .attr("viewBox", `0 0 ${width} ${height}`);
+
+    const g = svg.append("g")
+      .attr("transform", `translate(${width / 2},${height / 2})`);
+
+    const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+    const pie = d3.pie()
+      .sort(null) // preserves order
+      .value(d => d.value);
+
+    const arc = d3.arc()
+      .innerRadius(radius - 80)
+      .outerRadius(radius);
+
+    g.selectAll("path")
+      .data(pie(data))
+      .enter()
+      .append("path")
+      .attr("d", arc)
+      .attr("fill", (d, i) => color(i))
+      .on("mouseover", (event, d) => {
+        tooltip.html(`<strong>${d.data.label}</strong><br>${d.data.text}`)
+          .style("left", (event.pageX + 15) + "px")
+          .style("top", (event.pageY - 30) + "px")
+          .style("opacity", 1);
+      })
+      .on("mousemove", (event) => {
+        tooltip.style("left", (event.pageX + 15) + "px")
+          .style("top", (event.pageY - 30) + "px");
+      })
+      .on("mouseout", () => tooltip.style("opacity", 0));
+
+    // Word Cloud Setup
+    const fullText = paragraphs.join(" ");
+    const words = fullText.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/);
+    const freqMap = {};
+
+    words.forEach(word => {
+      if (word.length > 2) {
+        freqMap[word] = (freqMap[word] || 0) + 1;
+      }
+    });
+
+    const wordEntries = Object.entries(freqMap).map(([text, size]) => ({
+      text,
+      size: size * 10,
+      count: size
+    }));
+
+    d3.layout.cloud()
+      .size([400, 400])
+      .words(wordEntries)
+      .padding(4)
+      .rotate(() => ~~(Math.random() * 2) * 90)
+      .fontSize(d => d.size)
+      .on("end", drawCloud)
+      .start();
+
+    function drawCloud(words) {
+      g.append("g")
+        .attr("transform", `translate(0,0)`)
+        .selectAll("text")
+        .data(words)
+        .enter().append("text")
+        .style("font-size", d => `${d.size}px`)
+        .style("fill", (d, i) => color(i))
+        .attr("text-anchor", "middle")
+        .attr("transform", d => `translate(${[d.x, d.y]})rotate(${d.rotate})`)
+        .text(d => d.text)
+        .on("mouseover", (event, d) => {
+          tooltip.html(`<strong>${d.text}</strong><br>Used ${d.count} times`)
+            .style("left", (event.pageX + 15) + "px")
+            .style("top", (event.pageY - 30) + "px")
+            .style("opacity", 1);
+        })
+        .on("mousemove", (event) => {
+          tooltip.style("left", (event.pageX + 15) + "px")
+            .style("top", (event.pageY - 30) + "px");
+        })
+        .on("mouseout", () => tooltip.style("opacity", 0));
+    }
+  </script>
+</body>
+</html>
