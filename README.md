@@ -25,6 +25,7 @@ https://d3js.org/d3-hierarchy/treemap,  <br>
 https://d3js.org/d3-hierarchy/partition , <br>
 https://d3js.org/d3-delaunay/voronoi , <br>
 https://d3js.org/d3-hierarchy/tree, <br>
+https://codezup.com/building-a-real-time-data-visualization-dashboard-with-d3-js-and-javascript/<br>
 symbols: https://d3js.org/d3-shape/symbol#symbolWye<br>
 and some examples in websites
 https://archive.nytimes.com/www.nytimes.com/interactive/2012/09/06/us/politics/convention-word-counts.html
