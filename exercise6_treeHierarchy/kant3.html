@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radial Tree Visualization</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+        }
+        
+        #container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        #p5-container {
+            width: 100%;
+        }
+        
+        #tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <h1>Interactive Radial Tree - Critique of Pure Reason</h1>
+        <div id="p5-container"></div>
+        <div id="tooltip"></div>
+    </div>
+
+    <script>
+        // Data structure
+        const nodes = [
+            { "ID": "CRITIQUE OF PURE REASON", "Group": "60", "brief": "The Critique of Pure Reason is arranged around several basic distinctions. After the two Prefaces (the A edition Preface of 1781 and the B edition Preface of 1787) and the Introduction" },
+            { "ID": "Doctrine of Elements", "Group": "40", "brief": "The Doctrine of Elements sets out the a priori products of the mind" },
+            { "ID": "Doctrine of Methods", "Group": "40", "brief": "The Doctrine of Method contains four sections. The first section" },
+            { "ID": "Trascendental Analytic", "Group": "20", "brief": "The Transcendental Analytic sets forth the appropriate uses of a priori concepts" },
+            { "ID": "Trascendental Dialectic", "Group": "20", "brief": "The Transcendental Dialectic describes the transcendental illusion behind the misuse of these principles in attempts to apply them to realms beyond sense experience. Kant's most significant arguments are the Paralogisms of Pure Reason" },
+            { "ID": "Trascendental Aesthetic", "Group": "20", "brief": "The Transcendental Aesthetic" },
+            { "ID": "Trascendental Logic", "Group": "20", "brief": "sdfasdfasdfasdds" },
+            { "ID": "BOOK I—OF THE CONCEPTIONS OF PURE REASON.", "Group": "10", "brief": "asad" }
+        ];
+
+        const connections = [
+            { "Source": "CRITIQUE OF PURE REASON", "Target": "Doctrine of Elements", "Value": "7" },
+            { "Source": "CRITIQUE OF PURE REASON", "Target": "Doctrine of Methods", "Value": "7" },
+            { "Source": "Doctrine of Elements", "Target": "Trascendental Aesthetic", "Value": "5" },
+            { "Source": "Doctrine of Elements", "Target": "Trascendental Logic", "Value": "5" },
+            { "Source": "Trascendental Logic", "Target": "Trascendental Analytic", "Value": "1" },
+            { "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+            { "Source": "Trascendental Dialectic", "Target": "BOOK I—OF THE CONCEPTIONS OF PURE REASON.", "Value": "1" }
+        ];
+
+        // Circle class
+        class NodeCircle {
+            constructor(x, y, radius, id, group, brief) {
+                this.x = x;
+                this.y = y;
+                this.radius = radius;
+                this.id = id;
+                this.group = group;
+                this.brief = brief;
+                this.opacity = 127; // 50% opacity
+                this.expanded = false;
+                this.children = [];
+                this.visible = true;
+            }
+
+            display() {
+                if (!this.visible) return;
+                
+                push();
+                fill(70, 130, 180, this.opacity); // Steel blue
+                noStroke();
+                circle(this.x, this.y, this.radius * 2);
+                
+                // Draw text with better wrapping
+                fill(0, 0, 0, this.opacity);
+                textAlign(CENTER, CENTER);
+                textSize(Math.max(8, Math.min(12, this.radius / 3))); // Scale text with circle size
+                
+                let wrappedText = wrapText(this.id, 4);
+                let lines = wrappedText.split('\n');
+                let lineHeight = Math.max(10, Math.min(14, this.radius / 2.5));
+                let startY = this.y - ((lines.length - 1) * lineHeight) / 2;
+                
+                for (let i = 0; i < lines.length; i++) {
+                    text(lines[i], this.x, startY + i * lineHeight);
+                }
+                pop();
+            }
+
+            contains(x, y) {
+                let d = dist(x, y, this.x, this.y);
+                return d < this.radius;
+            }
+
+            setOpacity(opacity) {
+                this.opacity = opacity;
+            }
+        }
+
+        // Link class
+        class TreeLink {
+            constructor(source, target) {
+                this.source = source;
+                this.target = target;
+                this.opacity = 127; // 50% opacity
+            }
+
+            display() {
+                if (!this.source.visible || !this.target.visible) return;
+                
+                push();
+                stroke(100, 100, 100, this.opacity);
+                strokeWeight(2);
+                noFill();
+                
+                // Create bezier curve
+                let midX = (this.source.x + this.target.x) / 2;
+                let midY = (this.source.y + this.target.y) / 2;
+                let controlOffset = 50;
+                
+                bezier(
+                    this.source.x, this.source.y,
+                    this.source.x + controlOffset, this.source.y - controlOffset,
+                    this.target.x - controlOffset, this.target.y + controlOffset,
+                    this.target.x, this.target.y
+                );
+                pop();
+            }
+
+            setOpacity(opacity) {
+                this.opacity = opacity;
+            }
+        }
+
+        // Global variables
+        let nodeCircles = [];
+        let treeLinks = [];
+        let hoveredNode = null;
+        let tooltip;
+        let hierarchyLevels = {};
+        
+        // Pan and zoom variables
+        let panX = 0;
+        let panY = 0;
+        let zoomLevel = 1;
+        let isPanning = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+
+        function setup() {
+            let canvas = createCanvas(windowWidth - 40, windowHeight - 120);
+            canvas.parent('p5-container');
+            
+            tooltip = select('#tooltip');
+            
+            // Build hierarchy
+            buildHierarchy();
+            
+            // Create circles and links
+            createCircles();
+            createLinks();
+        }
+
+        function draw() {
+            background(245);
+            
+            // Draw circular boundary guide (optional visual aid)
+            push();
+            translate(panX, panY);
+            scale(zoomLevel);
+            
+            stroke(200, 200, 200, 100);
+            strokeWeight(1);
+            noFill();
+            let maxCircleRadius = Math.min(width, height) * 0.35;
+            circle(width/2, height/2, maxCircleRadius * 2);
+            
+            pop();
+            
+            // Apply transformations for pan and zoom
+            push();
+            translate(panX, panY);
+            scale(zoomLevel);
+            
+            // Draw links first
+            for (let link of treeLinks) {
+                link.display();
+            }
+            
+            // Draw circles
+            for (let node of nodeCircles) {
+                node.display();
+            }
+            
+            pop();
+            
+            // Handle hover effects (after transformations)
+            handleHover();
+            
+            // Draw zoom/pan instructions
+            drawInstructions();
+        }
+
+        function buildHierarchy() {
+            // Group nodes by their group value (hierarchy level)
+            for (let node of nodes) {
+                let level = parseInt(node.Group);
+                if (!hierarchyLevels[level]) {
+                    hierarchyLevels[level] = [];
+                }
+                hierarchyLevels[level].push(node);
+            }
+        }
+
+        function createCircles() {
+            let centerX = width / 2;
+            let centerY = height / 2;
+            let levels = Object.keys(hierarchyLevels).sort((a, b) => b - a); // Sort descending
+            
+            // Calculate the maximum radius for the circular boundary
+            let maxCircleRadius = Math.min(width, height) * 0.35; // 35% of smaller dimension
+            
+            for (let i = 0; i < levels.length; i++) {
+                let level = levels[i];
+                let levelNodes = hierarchyLevels[level];
+                let nodeRadius = getRadiusForLevel(parseInt(level));
+                
+                // Calculate distance from center based on hierarchy level and circular boundary
+                let normalizedLevel = i / (levels.length - 1); // 0 to 1
+                let distance = normalizedLevel * maxCircleRadius;
+                
+                // For root node, place at center
+                if (i === 0 && levelNodes.length === 1) {
+                    distance = 0;
+                }
+                
+                for (let j = 0; j < levelNodes.length; j++) {
+                    let x, y;
+                    
+                    if (distance === 0) {
+                        // Root node at center
+                        x = centerX;
+                        y = centerY;
+                    } else {
+                        // Distribute nodes evenly around the circle at this level
+                        let angle = (j / levelNodes.length) * TWO_PI - PI/2;
+                        x = centerX + cos(angle) * distance;
+                        y = centerY + sin(angle) * distance;
+                    }
+                    
+                    let nodeCircle = new NodeCircle(x, y, nodeRadius, levelNodes[j].ID, levelNodes[j].Group, levelNodes[j].brief);
+                    
+                    // Set initial visibility based on hierarchy
+                    if (parseInt(level) < 40) {
+                        nodeCircle.visible = false;
+                    }
+                    
+                    nodeCircles.push(nodeCircle);
+                }
+            }
+        }
+
+        function createLinks() {
+            for (let connection of connections) {
+                let sourceNode = nodeCircles.find(n => n.id === connection.Source);
+                let targetNode = nodeCircles.find(n => n.id === connection.Target);
+                
+                if (sourceNode && targetNode) {
+                    let link = new TreeLink(sourceNode, targetNode);
+                    treeLinks.push(link);
+                    sourceNode.children.push(targetNode);
+                }
+            }
+        }
+
+        function getRadiusForLevel(group) {
+            // Different sizes for different hierarchy levels
+            switch(group) {
+                case 60: return 30;
+                case 40: return 25;
+                case 20: return 20;
+                case 10: return 15;
+                default: return 20;
+            }
+        }
+
+        function wrapText(text, maxWords) {
+            let words = text.split(' ');
+            if (words.length <= 4) {
+                return text;
+            }
+            
+            // Split into 2-3 lines
+            let lines = [];
+            if (words.length <= 8) {
+                // Split into 2 lines
+                let midPoint = Math.ceil(words.length / 2);
+                lines.push(words.slice(0, midPoint).join(' '));
+                lines.push(words.slice(midPoint).join(' '));
+            } else {
+                // Split into 3 lines
+                let wordsPerLine = Math.ceil(words.length / 3);
+                for (let i = 0; i < words.length; i += wordsPerLine) {
+                    lines.push(words.slice(i, i + wordsPerLine).join(' '));
+                }
+            }
+            
+            return lines.join('\n');
+        }
+
+        function handleHover() {
+            hoveredNode = null;
+            
+            // Transform mouse coordinates to account for pan and zoom
+            let transformedMouseX = (mouseX - panX) / zoomLevel;
+            let transformedMouseY = (mouseY - panY) / zoomLevel;
+            
+            for (let node of nodeCircles) {
+                if (node.contains(transformedMouseX, transformedMouseY) && node.visible) {
+                    hoveredNode = node;
+                    node.setOpacity(255); // 100% opacity
+                    
+                    // Show tooltip
+                    tooltip.style('display', 'block');
+                    tooltip.style('left', (mouseX + 10) + 'px');
+                    tooltip.style('top', (mouseY - 10) + 'px');
+                    tooltip.html(node.id);
+                } else {
+                    node.setOpacity(127); // 50% opacity
+                }
+            }
+            
+            if (!hoveredNode) {
+                tooltip.style('display', 'none');
+            }
+        }
+
+        function mousePressed() {
+            // Transform mouse coordinates
+            let transformedMouseX = (mouseX - panX) / zoomLevel;
+            let transformedMouseY = (mouseY - panY) / zoomLevel;
+            
+            let nodeClicked = false;
+            for (let node of nodeCircles) {
+                if (node.contains(transformedMouseX, transformedMouseY) && node.visible) {
+                    toggleNodeExpansion(node);
+                    nodeClicked = true;
+                    break;
+                }
+            }
+            
+            // If no node was clicked, start panning
+            if (!nodeClicked) {
+                isPanning = true;
+                lastMouseX = mouseX;
+                lastMouseY = mouseY;
+            }
+        }
+
+        function mouseDragged() {
+            if (isPanning) {
+                panX += mouseX - lastMouseX;
+                panY += mouseY - lastMouseY;
+                lastMouseX = mouseX;
+                lastMouseY = mouseY;
+            }
+        }
+
+        function mouseReleased() {
+            isPanning = false;
+        }
+
+        function mouseWheel(event) {
+            // Zoom functionality
+            let zoomFactor = 1.1;
+            let zoomDirection = event.delta > 0 ? 1 / zoomFactor : zoomFactor;
+            
+            // Zoom towards mouse position
+            let mouseXBeforeZoom = (mouseX - panX) / zoomLevel;
+            let mouseYBeforeZoom = (mouseY - panY) / zoomLevel;
+            
+            zoomLevel *= zoomDirection;
+            zoomLevel = constrain(zoomLevel, 0.3, 3.0); // Limit zoom range
+            
+            let mouseXAfterZoom = (mouseX - panX) / zoomLevel;
+            let mouseYAfterZoom = (mouseY - panY) / zoomLevel;
+            
+            panX += (mouseXAfterZoom - mouseXBeforeZoom) * zoomLevel;
+            panY += (mouseYAfterZoom - mouseYBeforeZoom) * zoomLevel;
+            
+            return false; // Prevent page scrolling
+        }
+
+        function windowResized() {
+            resizeCanvas(windowWidth - 40, windowHeight - 120);
+        }
+
+        function drawInstructions() {
+            push();
+            fill(0, 100);
+            textAlign(LEFT, TOP);
+            textSize(12);
+            text("Mouse wheel: Zoom | Drag: Pan | Click nodes: Expand/Collapse", 10, 10);
+            text("Zoom: " + nf(zoomLevel, 1, 2) + "x", 10, 25);
+            pop();
+        }
+
+        function toggleNodeExpansion(node) {
+            node.expanded = !node.expanded;
+            
+            // Toggle visibility of children
+            for (let child of node.children) {
+                child.visible = node.expanded;
+                
+                // If collapsing, also collapse all descendants
+                if (!node.expanded) {
+                    collapseDescendants(child);
+                }
+            }
+        }
+
+        function collapseDescendants(node) {
+            node.expanded = false;
+            for (let child of node.children) {
+                child.visible = false;
+                collapseDescendants(child);
+            }
+        }
+    </script>
+</body>
+</html>

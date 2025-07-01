@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Radial Tree Visualization (p5.js)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      font-family: sans-serif;
+    }
+    #treeCanvas {
+      flex: 3;
+    }
+    #nodeList {
+      flex: 1;
+      background: #f8f8f8;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    .node-item {
+      padding: 4px;
+      cursor: pointer;
+      position: relative;
+    }
+    .node-item.active {
+      font-weight: bold;
+      background: #d0e8ff;
+    }
+    .slider {
+      position: absolute;
+      left: -10px;
+      width: 5px;
+      height: 100%;
+      background: #0077cc;
+      top: 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="treeCanvas"></div>
+  <div id="nodeList"></div>
+
+  <script>
+    let nodesData = [
+      { ID: "CRITIQUE OF PURE REASON", Group: 60 },
+      { ID: "Doctrine of Elements", Group: 40 },
+      { ID: "Doctrine of Methods", Group: 40 },
+      { ID: "Trascendental Analytic", Group: 20 },
+      { ID: "Trascendental Dialectic", Group: 20 },
+      { ID: "Trascendental Aesthetic", Group: 20 },
+      { ID: "Trascendental Logic", Group: 20 },
+      { ID: "BOOK I—OF THE CONCEPTIONS OF PURE REASON.", Group: 10 },
+    ];
+
+    let linksData = [
+      { Source: "CRITIQUE OF PURE REASON", Target: "Doctrine of Elements" },
+      { Source: "CRITIQUE OF PURE REASON", Target: "Doctrine of Methods" },
+      { Source: "Doctrine of Elements", Target: "Trascendental Aesthetic" },
+      { Source: "Doctrine of Elements", Target: "Trascendental Logic" },
+      { Source: "Trascendental Logic", Target: "Trascendental Analytic" },
+      { Source: "Trascendental Logic", Target: "Trascendental Dialectic" },
+      { Source: "Trascendental Dialectic", Target: "BOOK I—OF THE CONCEPTIONS OF PURE REASON." }
+    ];
+
+    let allNodes = {};
+    let circles = [];
+    let links = [];
+    let activeNode = null;
+
+    class CircleNode {
+      constructor(id, level) {
+        this.id = id;
+        this.level = level;
+        this.children = [];
+        this.parent = null;
+        this.angle = 0;
+        this.r = level * 80;
+        this.size = 30 - level * 2;
+        this.expanded = false;
+        this.visible = level === 0;
+        this.pos = createVector(0, 0);
+        this.hover = false;
+      }
+
+      updatePosition(center, total, index) {
+        this.angle = TWO_PI * (index / total);
+        this.pos = p5.Vector.fromAngle(this.angle).mult(this.r).add(center);
+      }
+
+      show() {
+        if (!this.visible) return;
+
+        stroke(0, 50);
+        fill(0, 100, 200, this.hover ? 255 : 100);
+        ellipse(this.pos.x, this.pos.y, this.size);
+
+        fill(0, this.hover ? 255 : 100);
+        noStroke();
+        textAlign(CENTER, CENTER);
+        textSize(10);
+        let words = this.id.split(" ");
+        for (let i = 0; i < words.length; i += 3) {
+          let line = words.slice(i, i + 3).join(" ");
+          text(line, this.pos.x, this.pos.y + (i * 10) - 10);
+        }
+
+        if (this.hover) {
+          fill(0);
+          rect(mouseX + 10, mouseY, 150, 30);
+          fill(255);
+          text(this.id, mouseX + 15, mouseY + 15);
+        }
+      }
+
+      checkHover(mx, my) {
+        this.hover = dist(mx, my, this.pos.x, this.pos.y) < this.size / 2;
+        return this.hover;
+      }
+
+      toggle() {
+        this.expanded = !this.expanded;
+        for (let child of this.children) {
+          child.setVisible(this.expanded);
+        }
+      }
+
+      setVisible(state) {
+        this.visible = state;
+        if (!state) {
+          for (let c of this.children) c.setVisible(false);
+          this.expanded = false;
+        }
+      }
+    }
+
+    class BezierLink {
+      constructor(source, target) {
+        this.source = source;
+        this.target = target;
+      }
+
+      show() {
+        if (!this.source.visible || !this.target.visible) return;
+
+        stroke(0, 50);
+        noFill();
+        let p1 = this.source.pos;
+        let p2 = this.target.pos;
+        let mid = p5.Vector.lerp(p1, p2, 0.5);
+        bezier(p1.x, p1.y, mid.x, p1.y, mid.x, p2.y, p2.x, p2.y);
+      }
+    }
+
+    function createCircles() {
+      let root = new CircleNode("CRITIQUE OF PURE REASON", 0);
+      allNodes[root.id] = root;
+      circles.push(root);
+
+      for (let node of nodesData) {
+        if (node.ID === root.id) continue;
+        let parentLink = linksData.find(l => l.Target === node.ID);
+        let parent = allNodes[parentLink?.Source];
+        let newNode = new CircleNode(node.ID, node.Group / 20);
+        if (parent) {
+          newNode.parent = parent;
+          parent.children.push(newNode);
+        }
+        allNodes[node.ID] = newNode;
+        circles.push(newNode);
+      }
+    }
+
+    function createLinks() {
+      for (let link of linksData) {
+        let src = allNodes[link.Source];
+        let tgt = allNodes[link.Target];
+        if (src && tgt) {
+          links.push(new BezierLink(src, tgt));
+        }
+      }
+    }
+
+    function setup() {
+      let canvas = createCanvas(800, 800);
+      canvas.parent("treeCanvas");
+      textFont("sans-serif");
+      angleMode(RADIANS);
+      createCircles();
+      createLinks();
+      updateList();
+    }
+
+    function draw() {
+      background(255);
+      translate(width / 2, height / 2);
+      let visibleCircles = circles.filter(c => c.visible);
+      visibleCircles.forEach((c, i) => c.updatePosition(createVector(0, 0), visibleCircles.length, i));
+      for (let l of links) l.show();
+      for (let c of circles) c.show();
+    }
+
+    function mousePressed() {
+      for (let c of circles) {
+        if (c.visible && c.checkHover(mouseX - width / 2, mouseY - height / 2)) {
+          c.toggle();
+          activeNode = c;
+          updateList();
+        }
+      }
+    }
+
+    function mouseMoved() {
+      let mx = mouseX - width / 2;
+      let my = mouseY - height / 2;
+      for (let c of circles) {
+        c.checkHover(mx, my);
+      }
+    }
+
+    function updateList() {
+      let container = document.getElementById("nodeList");
+      container.innerHTML = "";
+      circles.forEach(c => {
+        let div = document.createElement("div");
+        div.className = "node-item";
+        if (c === activeNode) div.classList.add("active");
+
+        div.innerHTML = c === activeNode ? `<div class="slider"></div>${c.id}` : c.id;
+        div.addEventListener("click", () => {
+          c.toggle();
+          activeNode = c;
+          updateList();
+        });
+        container.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

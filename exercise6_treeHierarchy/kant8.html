@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Critique of Pure Reason - Interactive Tree</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f8f9fa;
+        }
+        
+        #tree-container {
+            width: 100%;
+            height: 80vh;
+            border: 1px solid #ddd;
+            background: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .node {
+            cursor: pointer;
+            stroke: #333;
+            stroke-width: 2px;
+        }
+        
+        .node.selected {
+            opacity: 1;
+        }
+        
+        .node.unselected {
+            opacity: 0.5;
+        }
+        
+        .link {
+            fill: none;
+            stroke: #666;
+            stroke-width: 2px;
+            opacity: 0.6;
+        }
+        
+        .node-text {
+            font-size: 12px;
+            text-anchor: middle;
+            pointer-events: none;
+            fill: #333;
+        }
+        
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            max-width: 200px;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .tooltip a {
+            color: #66b3ff;
+            text-decoration: none;
+        }
+        
+        .tooltip a:hover {
+            text-decoration: underline;
+        }
+        
+        .controls {
+            margin-bottom: 10px;
+        }
+        
+        button {
+            padding: 8px 16px;
+            margin-right: 10px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="controls">
+        <button onclick="resetView()">Reset View</button>
+        <button onclick="expandAll()">Expand All</button>
+        <button onclick="collapseAll()">Collapse All</button>
+    </div>
+    
+    <div id="tree-container"></div>
+    <div class="tooltip" id="tooltip"></div>
+    
+    <script>
+        // Data
+        const nodeData = [
+            { "ID": "CRITIQUE OF PURE REASON", "Group": "60", "brief": "The Critique of Pure Reason is arranged around several basic distinctions. After the two Prefaces (the A edition Preface of 1781 and the B edition Preface of 1787) and the Introduction", "link": "google.com" },
+            { "ID": "Doctrine of Elements", "Group": "40", "brief": "The Doctrine of Elements sets out the a priori products of the mind", "link": "google.com" },
+            { "ID": "Doctrine of Methods", "Group": "40", "brief": "The Doctrine of Method contains four sections. The first section", "link": "google.com" },
+            { "ID": "Trascendental Analytic", "Group": "20", "brief": "The Transcendental Analytic sets forth the appropriate uses of a priori concepts", "link": "google.com" },
+            { "ID": "Trascendental Dialectic", "Group": "20", "brief": "The Transcendental Dialectic describes the transcendental illusion behind the misuse of these principles in attempts to apply them to realms beyond sense experience. Kant's most significant arguments are the Paralogisms of Pure Reason", "link": "google.com" },
+            { "ID": "Trascendental Aesthetic", "Group": "20", "brief": "The Transcendental Aesthetic", "link": "google.com" },
+            { "ID": "Trascendental Logic", "Group": "20", "brief": "sdfasdfasdfasdds" }
+        ];
+        
+        const linkData = [
+            { "Source": "CRITIQUE OF PURE REASON", "Target": "Doctrine of Elements", "Value": "7" },
+            { "Source": "CRITIQUE OF PURE REASON", "Target": "Doctrine of Methods", "Value": "7" },
+            { "Source": "Doctrine of Elements", "Target": "Trascendental Aesthetic", "Value": "5" },
+            { "Source": "Doctrine of Elements", "Target": "Trascendental Logic", "Value": "5" },
+            { "Source": "Trascendental Logic", "Target": "Trascendental Analytic", "Value": "1" },
+            { "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" }
+        ];
+        
+        // Create hierarchy from flat data
+        function createHierarchy() {
+            const nodeMap = new Map();
+            nodeData.forEach(d => {
+                nodeMap.set(d.ID, {
+                    ...d,
+                    children: [],
+                    _children: null,
+                    expanded: false
+                });
+            });
+            
+            // Build parent-child relationships
+            linkData.forEach(link => {
+                const parent = nodeMap.get(link.Source);
+                const child = nodeMap.get(link.Target);
+                if (parent && child) {
+                    parent.children.push(child);
+                }
+            });
+            
+            // Initially collapse all except root
+            function collapseNode(node) {
+                if (node.children && node.children.length > 0) {
+                    node._children = node.children;
+                    node.children = null;
+                    node.expanded = false;
+                    node._children.forEach(collapseNode);
+                }
+            }
+            
+            const root = nodeMap.get("CRITIQUE OF PURE REASON");
+            root.expanded = true; // Root starts expanded
+            if (root.children) {
+                root.children.forEach(collapseNode);
+            }
+            
+            return root;
+        }
+        
+        // Set up SVG
+        const container = d3.select("#tree-container");
+        const containerRect = container.node().getBoundingClientRect();
+        const width = containerRect.width;
+        const height = containerRect.height;
+        
+        const svg = container.append("svg")
+            .attr("width", width)
+            .attr("height", height);
+        
+        // Create zoom behavior
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 4])
+            .on("zoom", (event) => {
+                g.attr("transform", event.transform);
+            });
+        
+        svg.call(zoom);
+        
+        const g = svg.append("g");
+        
+        // Force simulation
+        const simulation = d3.forceSimulation()
+            .force("link", d3.forceLink().id(d => d.data.ID).distance(100))
+            .force("charge", d3.forceManyBody().strength(-300))
+            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("collision", d3.forceCollide().radius(50));
+        
+        let root = createHierarchy();
+        let nodes, links;
+        
+        function wrapText(text, width) {
+            const words = text.split(/\s+/);
+            const lines = [];
+            let currentLine = "";
+            
+            for (let word of words) {
+                if ((currentLine + word).length <= width) {
+                    currentLine += (currentLine ? " " : "") + word;
+                } else {
+                    if (currentLine) lines.push(currentLine);
+                    currentLine = word;
+                }
+            }
+            if (currentLine) lines.push(currentLine);
+            
+            return lines.slice(0, 3); // Max 3 lines
+        }
+        
+        function getNodeRadius(group) {
+            const groupNum = parseInt(group);
+            if (groupNum >= 60) return 30;
+            if (groupNum >= 40) return 25;
+            if (groupNum >= 20) return 20;
+            return 15;
+        }
+        
+        function getNodeColor(group) {
+            const groupNum = parseInt(group);
+            if (groupNum >= 60) return "#ff6b6b";
+            if (groupNum >= 40) return "#4ecdc4";
+            if (groupNum >= 20) return "#45b7d1";
+            return "#96ceb4";
+        }
+        
+        let clickTimeout;
+        
+        function click(event, d) {
+            // Clear any existing timeout
+            clearTimeout(clickTimeout);
+            
+            if (event.detail === 1) {
+                // Single click - set timeout to handle both expand/collapse and tooltip
+                clickTimeout = setTimeout(() => {
+                    // Toggle expansion
+                    if (d.children) {
+                        d._children = d.children;
+                        d.children = null;
+                        d.expanded = false;
+                    } else if (d._children) {
+                        d.children = d._children;
+                        d._children = null;
+                        d.expanded = true;
+                    }
+                    update();
+                    
+                    // Show tooltip
+                    showTooltip(event, d);
+                }, 250);
+            } else if (event.detail === 2) {
+                // Double click - hide tooltip and prevent single click action
+                hideTooltip();
+            }
+        }
+        
+        function showTooltip(event, d) {
+            const tooltip = d3.select("#tooltip");
+            tooltip.style("display", "block")
+                .html(`
+                    <strong>${d.data.ID}</strong><br>
+                    ${d.data.brief}<br>
+                    <a href="https://${d.data.link}" target="_blank">Learn more</a>
+                `)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 10) + "px");
+        }
+        
+        function hideTooltip() {
+            d3.select("#tooltip").style("display", "none");
+        }
+        
+        function update() {
+            // Create hierarchy structure for d3.tree
+            const treeData = d3.hierarchy(root, d => d.children);
+            
+            // Generate tree layout
+            const treeLayout = d3.tree().size([height - 100, width - 100]);
+            treeLayout(treeData);
+            
+            // Convert to flat arrays for force simulation
+            nodes = treeData.descendants();
+            links = treeData.links();
+            
+            // Update force simulation
+            simulation.nodes(nodes);
+            simulation.force("link").links(links);
+            
+            // Update links
+            const link = g.selectAll(".link")
+                .data(links, d => d.target.data.ID);
+            
+            link.exit().remove();
+            
+            const linkEnter = link.enter().append("path")
+                .attr("class", "link");
+            
+            const linkUpdate = linkEnter.merge(link);
+            
+            // Update nodes
+            const node = g.selectAll(".node-group")
+                .data(nodes, d => d.data.ID);
+            
+            node.exit().remove();
+            
+            const nodeEnter = node.enter().append("g")
+                .attr("class", "node-group")
+                .on("click", click);
+            
+            nodeEnter.append("circle")
+                .attr("class", "node");
+            
+            nodeEnter.append("g")
+                .attr("class", "text-group");
+            
+            const nodeUpdate = nodeEnter.merge(node);
+            
+            // Update node appearance
+            nodeUpdate.select(".node")
+                .attr("r", d => getNodeRadius(d.data.Group))
+                .attr("fill", d => getNodeColor(d.data.Group))
+                .classed("selected", d => d.expanded || d === root || (d.children && d.children.length > 0))
+                .classed("unselected", d => !d.expanded && d !== root && !(d.children && d.children.length > 0));
+            
+            // Update text
+            nodeUpdate.select(".text-group")
+                .selectAll("text").remove();
+            
+            nodeUpdate.select(".text-group")
+                .each(function(d) {
+                    const textGroup = d3.select(this);
+                    const lines = wrapText(d.data.ID, 20);
+                    
+                    lines.forEach((line, i) => {
+                        textGroup.append("text")
+                            .attr("class", "node-text")
+                            .attr("dy", `${(i - lines.length/2 + 0.5) * 1.2}em`)
+                            .text(line);
+                    });
+                });
+            
+            // Set up simulation tick
+            simulation.on("tick", () => {
+                linkUpdate.attr("d", d => {
+                    const source = d.source;
+                    const target = d.target;
+                    return `M${source.x},${source.y}C${source.x},${(source.y + target.y) / 2} ${target.x},${(source.y + target.y) / 2} ${target.x},${target.y}`;
+                });
+                
+                nodeUpdate.attr("transform", d => `translate(${d.x},${d.y})`);
+            });
+            
+            simulation.alpha(1).restart();
+        }
+        
+        // Control functions
+        function resetView() {
+            svg.transition().duration(750).call(
+                zoom.transform,
+                d3.zoomIdentity
+            );
+        }
+        
+        function expandAll() {
+            function expand(node) {
+                if (node._children) {
+                    node.children = node._children;
+                    node._children = null;
+                    node.expanded = true;
+                }
+                if (node.children) {
+                    node.children.forEach(expand);
+                }
+            }
+            expand(root);
+            update();
+        }
+        
+        function collapseAll() {
+            function collapse(node) {
+                if (node.children) {
+                    node._children = node.children;
+                    node.children = null;
+                    node.expanded = false;
+                }
+                if (node._children) {
+                    node._children.forEach(collapse);
+                }
+            }
+            if (root.children) {
+                root.children.forEach(collapse);
+            }
+            update();
+        }
+        
+        // Hide tooltip when clicking elsewhere
+        svg.on("click", function(event) {
+            if (event.target === this) {
+                hideTooltip();
+            }
+        });
+        
+        // Initial render
+        update();
+    </script>
+</body>
+</html>

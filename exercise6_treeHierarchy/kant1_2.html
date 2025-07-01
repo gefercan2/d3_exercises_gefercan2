@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kant's Critique of Pure Reason - Interactive Tree</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            width:100%;
+		font-family: 'Arial', sans-serif;
+            background: #ffffff);
+            margin: 0;
+            padding: 0px;
+            min-height: 100vh;
+        }
+
+        .container {
+	    width:100%;
+            background: #ffffff;
+            border-radius: 15px;
+            padding: 0px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        #tree-container {
+            width: 100%;
+            height: 100vh;
+            border: 2px solid #e0e6ed;
+            border-radius: 10px;
+            background: #ffffff;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .node circle {
+            cursor: pointer;
+            stroke: #3498db;
+            stroke-width: 3px;
+            transition: all 0.3s ease;
+        }
+
+        .node circle:hover {
+            stroke-width: 5px;
+            stroke: #e74c3c;
+            transform: scale(1.1);
+        }
+
+        .node text {
+            font: 14px 'Arial', sans-serif;
+            font-weight: bold;
+            text-anchor: middle;
+            cursor: pointer;
+            fill: #2c3e50;
+            text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+        }
+
+        .link {
+            fill: none;
+            stroke: #95a5a6;
+            stroke-width: 2px;
+            stroke-dasharray: 5,5;
+            animation: dash 20s linear infinite;
+        }
+
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -1000;
+            }
+        }
+
+        .tooltip {
+            position: absolute;
+            padding: 10px;
+            background: rgba(44, 62, 80, 0.95);
+            color: white;
+            border-radius: 8px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 12px;
+            max-width: 300px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .instructions {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+        }
+
+        .instructions h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        .instructions p {
+            margin: 5px 0;
+            color: #34495e;
+        }
+    </style>
+</head>
+
+
+
+
+
+
+<body>
+    <div class="container">
+        <h1>Kant's Critique of Pure Reason</h1> 
+        <div class="instructions">
+            <h3>How to interact:</h3>
+            <p>• Click on any node with children to expand or collapse it</p>
+            <p>• Hover over nodes to see detailed descriptions</p>
+            <p>• The tree starts with only the root node visible</p>
+        </div>
+
+        <div id="tree-container"></div>
+        <div class="tooltip" id="tooltip"></div>
+    </div>
+
+
+
+
+    <script>
+
+        // Data structure
+        const nodes = [
+{ "ID": "CRITIQUE OF PURE REASON", "Group": "60", "brief": "The Critique of Pure Reason is arranged around several basic distinctions. After the two Prefaces (the A edition Preface of 1781 and the B edition Preface of 1787) and the Introduction" },
+{ "ID": "Doctrine of Elements", "Group": "40", "brief": "The Doctrine of Elements sets out the a priori products of the mind" },
+{ "ID": "Doctrine of Methods", "Group": "40", "brief": "The Doctrine of Method contains four sections. The first section" },
+{ "ID": "Trascendental Analytic", "Group": "20", "brief": "The Transcendental Analytic sets forth the appropriate uses of a priori concepts" },
+{ "ID": "Trascendental Dialectic", "Group": "20", "brief": "The Transcendental Dialectic describes the transcendental illusion behind the misuse of these principles in attempts to apply them to realms beyond sense experience. Kant's most significant arguments are the Paralogisms of Pure Reason" },
+{ "ID": "Trascendental Aesthetic", "Group": "20", "brief": "The Transcendental Aesthetic" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "INTRODUCTION.c", "Group": "9", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "BOOK I—OF THE CONCEPTIONS OF PURE REASON.", "Group": "9", "brief": "The Transcendental Logic examines the principles of understanding" },
+,{ "ID": "Book I. Analytic of Conceptions.", "Group": "9", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "BOOK II—OF THE DIALECTICAL PROCEDURE OF PURE REASON.", "Group": "9", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Book II. Analytic of Principles", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "I. Of Transcendental Illusory Appearance.", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "1.Introductory", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "10. Conclusion of the Transcendental Æsthetic.", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "2. Metaphysical Exposition of this Conception.", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "3. Transcendental Exposition of the Conception of Space.", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "4. Conclusions from the foregoing Conceptions.", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "5.Metaphysical Exposition of this Conception.", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "6.Transcendental Exposition of the Conception of Time.", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "7.Conclusions from the above Conceptions.", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "8. Elucidation.", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "9. General Remarks on Transcendental Æsthetic.", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Appendix. Of the Regulative Employment of the Ideas of Pure Reason.", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Chapter I. Of the Paralogisms of Pure Reason.", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Chapter I. Of the Schematism at of the Pure Conceptions of the Understanding.", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Chapter I. Of the Transcendental Clue to the Discovery of all Pure Conceptions of the Understandingc", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Chapter I. The Discipline of Pure Reason.", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Chapter II. Of the Deduction of the Pure Conception of the Understanding", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Chapter II. System of all Principles of the Pure Understanding.", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Chapter II. The Antinomy of Pure Reason.", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Chapter II. The Canon of Pure Reason.", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Chapter III Of the Ground of the Division of all Objects into Phenomena and Noumena.", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Chapter III. The Architectonic of Pure Reason", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Chapter III. The Ideal of Pure Reason.", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Chapter IV. The History of Pure Reason.", "Group": "7", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Section I of Space", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Section I—Of Ideas in General.", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Section I. Of the Logical Use of the Understanding in General.", "Group": "5", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Section I. Of the Supreme Principle of all Analytical Judgements.", "Group": "5", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Section I. System of Cosmological Ideas.", "Group": "5", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Section II of Time", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Section II. Antithetic of Pure Reason.", "Group": "5", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Section II. Of the Logical Function of the Understanding in Judgements.", "Group": "5", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Section II. Of the Supreme Principle of all Synthetical Judgements.", "Group": "5", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Section II. Of Transcendental Ideas.", "Group": "5", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Section III. Of the Interest of Reason in these Self-contradictions.", "Group": "5", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Section III. Of the Pure Conceptions of the Understanding, or Categories.", "Group": "5", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Section III. System of Transcendental Ideas.", "Group": "5", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Section III. Systematic Representation of all Synthetical Principles of the Pure Understanding.", "Group": "5", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Section IV. Of the necessity imposed upon Pure Reason of presenting a Solution of its Transcendental Problems.", "Group": "5", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+{ "ID": "Trascendental Logic", "Group": "20", "brief": "The Transcendental Logic examines the principles of understanding" },
+        ];
+
+        const links = [
+            	{ "Source": "CRITIQUE OF PURE REASON", "Target": "Doctrine of Elements", "Value": "7" },
+            	{ "Source": "CRITIQUE OF PURE REASON", "Target": "Doctrine of Methods", "Value": "7" },
+            	{ "Source": "Doctrine of Elements", "Target": "Trascendental Aesthetic", "Value": "5" },
+            	{ "Source": "Doctrine of Elements", "Target": "Trascendental Logic", "Value": "5" },
+            	{ "Source": "Trascendental Logic", "Target": "Trascendental Analytic", "Value": "1" },
+            	{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Aesthetic", "Target": "1.Introductory", "Value": "1" },
+ 		{ "Source": "Trascendental Aesthetic", "Target": "Section I of Space", "Value": "1" },
+ 		{ "Source": "Trascendental Aesthetic", "Target": "Section II of Time", "Value": "1" },
+ 		{ "Source": "Section I of Space", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Section I of Space", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Section I of Space", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Section II of Time", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Section II of Time", "Target": "Trascendental Dialectic", "Value": "1" },
+		{ "Source": "Section II of Time", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Section II of Time", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Section II of Time", "Target": "Trascendental Dialectic", "Value": "1" },
+		{ "Source": "Section II of Time", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Book I. Analytic of Conceptions.", "Target": "Chapter I. Of the Transcendental Clue to the Discovery of all Pure Conceptions of the Understanding", "Value": "1" },
+ 		{ "Source": "Book I. Analytic of Conceptions.", "Target": "Chapter II. Of the Deduction of the Pure Conception of the Understanding", "Value": "1" },
+ 		{ "Source": "Chapter I. Of the Transcendental Clue to the Discovery of all Pure Conceptions of the Understanding", "Target": "Section I. Of the Logical Use of the Understanding in General.", "Value": "1" },
+ 		{ "Source": "Chapter I. Of the Transcendental Clue to the Discovery of all Pure Conceptions of the Understanding", "Target": "Section II. Of the Logical Function of the Understanding in Judgements.", "Value": "1" },
+ 		{ "Source": "Chapter I. Of the Transcendental Clue to the Discovery of all Pure Conceptions of the Understanding", "Target": "Section III. Of the Pure Conceptions of the Understanding, or Categories.", "Value": "1" },
+ 		{ "Source": "Trascendental Analytic", "Target": "Book I. Analytic of Conceptions.", "Value": "1" },
+ 		{ "Source": "Trascendental Analytic", "Target": "Book II. Analytic of Principles", "Value": "1" },
+		{ "Source": "Book II. Analytic of Principles", "Target": "Chapter I. Of the Schematism at of the Pure Conceptions of the Understanding.", "Value": "1" },
+ 		{ "Source": "Book II. Analytic of Principles", "Target": "Chapter II. System of all Principles of the Pure Understanding.", "Value": "1" },
+ 		{ "Source": "Book II. Analytic of Principles", "Target": "Chapter III Of the Ground of the Division of all Objects into Phenomena and Noumena.", "Value": "1" },
+ 		{ "Source": "Chapter II. System of all Principles of the Pure Understanding.", "Target": "Section I. Of the Supreme Principle of all Analytical Judgements.", "Value": "1" },
+ 		{ "Source": "Chapter II. System of all Principles of the Pure Understanding.", "Target": "Section II. Of the Supreme Principle of all Synthetical Judgements.", "Value": "1" },
+ 		{ "Source": "Chapter II. System of all Principles of the Pure Understanding.", "Target": "Section III. Systematic Representation of all Synthetical Principles of the Pure Understanding.", "Value": "1" },
+ 		{ "Source": "Trascendental Dialectic", "Target": "INTRODUCTION.", "Value": "1" },
+ 		{ "Source": "Trascendental Dialectic", "Target": "BOOK I—OF THE CONCEPTIONS OF PURE REASON.", "Value": "1" },
+ 		{ "Source": "Trascendental Dialectic", "Target": "BOOK II—OF THE DIALECTICAL PROCEDURE OF PURE REASON.", "Value": "1" },
+ 		{ "Source": "BOOK I—OF THE CONCEPTIONS OF PURE REASON.", "Target": "Section I—Of Ideas in General.", "Value": "1" },
+ 		{ "Source": "BOOK I—OF THE CONCEPTIONS OF PURE REASON.", "Target": "Section II. Of Transcendental Ideas.", "Value": "1" },
+ 		{ "Source": "BOOK I—OF THE CONCEPTIONS OF PURE REASON.", "Target": "Section III. System of Transcendental Ideas.", "Value": "1" },
+ 		{ "Source": "BOOK II—OF THE DIALECTICAL PROCEDURE OF PURE REASON.", "Target": "Chapter I. Of the Paralogisms of Pure Reason.", "Value": "1" },
+ 		{ "Source": "BOOK II—OF THE DIALECTICAL PROCEDURE OF PURE REASON.", "Target": "Chapter II. The Antinomy of Pure Reason.", "Value": "1" },
+ 		{ "Source": "BOOK II—OF THE DIALECTICAL PROCEDURE OF PURE REASON.", "Target": "Chapter III. The Ideal of Pure Reason.", "Value": "1" },
+ 		{ "Source": "BOOK II—OF THE DIALECTICAL PROCEDURE OF PURE REASON.", "Target": "Appendix. Of the Regulative Employment of the Ideas of Pure Reason.", "Value": "1" },
+ 		{ "Source": "Chapter I. Of the Paralogisms of Pure Reason.", "Target": "Section I. System of Cosmological Ideas.", "Value": "1" },
+ 		{ "Source": "Chapter I. Of the Paralogisms of Pure Reason.", "Target": "Section I. System of Cosmological Ideas.", "Value": "1" },
+ 		{ "Source": "Chapter I. Of the Paralogisms of Pure Reason.", "Target": "Section II. Antithetic of Pure Reason.", "Value": "1" },
+ 		{ "Source": "Chapter I. Of the Paralogisms of Pure Reason.", "Target": "Section III. Of the Interest of Reason in these Self-contradictions.", "Value": "1" },
+ 		{ "Source": "Chapter I. Of the Paralogisms of Pure Reason.", "Target": "Section IV. Of the necessity imposed upon Pure Reason of presenting a Solution of its Transcendental Problems.", "Value": "1" },
+ 		{ "Source": "Chapter I. Of the Paralogisms of Pure Reason.", "Target": "Section V. Sceptical Exposition of the Cosmological Problems presented in the four Transcendental Ideas.", "Value": "1" },
+ 		{ "Source": "Chapter I. Of the Paralogisms of Pure Reason.", "Target": "Section VI. Transcendental Idealism as the Key to the Solution of Pure Cosmological Dialectic.", "Value": "1" },
+ 		{ "Source": "Chapter I. Of the Paralogisms of Pure Reason.", "Target": "Section VII. Critical Solution of the Cosmological Problem.", "Value": "1" },
+ 		{ "Source": "Chapter I. Of the Paralogisms of Pure Reason.", "Target": "Section VIII. Regulative Principle of Pure Reason in relation to the Cosmological Ideas.", "Value": "1" },
+ 		{ "Source": "Chapter I. Of the Paralogisms of Pure Reason.", "Target": "Section IX. Of the Empirical Use of the Regulative Principle of Reason with regard to the Cosmological Ideas.", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+ 		{ "Source": "Trascendental Logic", "Target": "Trascendental Dialectic", "Value": "1" },
+        ];
+
+        // Create hierarchy from flat data
+        function createHierarchy() {
+            const nodeMap = {};
+            nodes.forEach(node => {
+                nodeMap[node.ID] = { ...node, children: [] };
+            });
+
+            const root = nodeMap["CRITIQUE OF PURE REASON"];
+            
+            links.forEach(link => {
+                if (nodeMap[link.Source] && nodeMap[link.Target]) {
+                    nodeMap[link.Source].children.push(nodeMap[link.Target]);
+                }
+            });
+
+            return root;
+        }
+
+        // Set up SVG
+        const margin = { top: 150, right: 50, bottom: 50, left: 150 };
+        const width = 2100 ;
+        const height = 1200;
+
+        const svg = d3.select("#tree-container")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom);
+
+        const g = svg.append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        const tree = d3.tree().size([height, width]);
+        const tooltip = d3.select("#tooltip");
+
+        // Create initial hierarchy
+        let root = d3.hierarchy(createHierarchy());
+        root.x0 = height / 5;
+        root.y0 = 0;
+
+        // Collapse all children initially except root
+        function collapse(d) {
+            if (d.children) {
+                d._children = d.children;
+                d._children.forEach(collapse);
+                d.children = null;
+            }
+        }
+
+        root.children.forEach(collapse);
+
+        // Update function
+        function update(source) {
+            const treeData = tree(root);
+            const nodes = treeData.descendants();
+            const links = treeData.descendants().slice(1);
+
+            // Set position for nodes
+            nodes.forEach(d => d.y = d.depth * 250);
+
+            // Update nodes
+            const node = g.selectAll('g.node')
+                .data(nodes, d => d.id || (d.id = ++i));
+
+            const nodeEnter = node.enter().append('g')
+                .attr('class', 'node')
+                .attr("transform", d => `translate(${source.y0},${source.x0})`)
+                .on('click', click)
+                .on('mouseover', showTooltip)
+                .on('mouseout', hideTooltip);
+
+            nodeEnter.append('circle')
+                .attr('r', 1e-6)
+                .style("fill", d => d._children ? "#3498db" : d.children ? "#e74c3c" : "#2ecc71");
+
+            nodeEnter.append('text')
+                .attr("dy", ".35em")
+                .attr("x", d => d.children || d._children ? -25 : 25)
+                .attr("text-anchor", d => d.children || d._children ? "end" : "start")
+                .text(d => d.data.ID)
+                .style("fill-opacity", 1e-6);
+
+            const nodeUpdate = nodeEnter.merge(node);
+
+            nodeUpdate.transition()
+                .duration(750)
+                .attr("transform", d => `translate(${d.y},${d.x})`);
+
+            nodeUpdate.select('circle')
+                .attr('r', d => parseInt(d.data.Group) / 3)
+                .style("fill", d => d._children ? "#3498db" : d.children ? "#e74c3c" : "#2ecc71")
+                .attr('cursor', 'pointer');
+
+            nodeUpdate.select('text')
+                .style("fill-opacity", 1);
+
+            const nodeExit = node.exit().transition()
+                .duration(750)
+                .attr("transform", d => `translate(${source.y},${source.x})`)
+                .remove();
+
+            nodeExit.select('circle')
+                .attr('r', 1e-6);
+
+            nodeExit.select('text')
+                .style("fill-opacity", 1e-6);
+
+            // Update links
+            const link = g.selectAll('path.link')
+                .data(links, d => d.id);
+
+            const linkEnter = link.enter().insert('path', "g")
+                .attr("class", "link")
+                .attr('d', d => {
+                    const o = { x: source.x0, y: source.y0 };
+                    return diagonal(o, o);
+                });
+
+            const linkUpdate = linkEnter.merge(link);
+
+            linkUpdate.transition()
+                .duration(750)
+                .attr('d', d => diagonal(d, d.parent));
+
+            const linkExit = link.exit().transition()
+                .duration(750)
+                .attr('d', d => {
+                    const o = { x: source.x, y: source.y };
+                    return diagonal(o, o);
+                })
+                .remove();
+
+            nodes.forEach(d => {
+                d.x0 = d.x;
+                d.y0 = d.y;
+            });
+        }
+
+        // Diagonal path generator
+        function diagonal(s, d) {
+            return `M ${s.y} ${s.x}
+                    C ${(s.y + d.y) / 2} ${s.x},
+                      ${(s.y + d.y) / 2} ${d.x},
+                      ${d.y} ${d.x}`;
+        }
+
+        // Click handler
+        function click(event, d) {
+            if (d.children) {
+                d._children = d.children;
+                d.children = null;
+            } else {
+                d.children = d._children;
+                d._children = null;
+            }
+            update(d);
+        }
+
+        // Tooltip functions
+        function showTooltip(event, d) {
+            tooltip.transition()
+                .duration(200)
+                .style("opacity", .9);
+            tooltip.html(`<strong>${d.data.ID}</strong><br/>${d.data.brief}`)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 28) + "px");
+        }
+
+        function hideTooltip() {
+            tooltip.transition()
+                .duration(500)
+                .style("opacity", 0);
+        }
+
+        // Initialize
+        let i = 0;
+        update(root);
+    </script>
+</body>
+</html>
