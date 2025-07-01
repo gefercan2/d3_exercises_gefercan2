@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>UAE Exports Sankey‑Map</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://unpkg.com/topojson@3"></script>
+  <script src="https://unpkg.com/d3-geo-projection@4"></script>
+  <script src="https://unpkg.com/d3-sankey@0.12"></script>
+  <style>
+    body { margin: 0; overflow: hidden; font-family: sans-serif; }
+    svg { width: 100vw; height: 100vh; }
+    .country { fill: #ddd; stroke: #999; cursor: pointer; }
+    .country.highlighted { fill: orange; }
+    .flow { fill: none; stroke: steelblue; opacity: 0.6; }
+    .tooltip {
+      position: absolute;
+      background: rgba(0,0,0,0.7);
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 3px;
+      pointer-events: none;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <svg></svg>
+  <div class="tooltip" style="display:none;"></div>
+
+  <script>
+  const width = window.innerWidth, height = window.innerHeight;
+
+  const exportData = [
+    {target:"India", value:99},
+    {target:"China", value:176},
+    {target:"United States of America", value:88},
+    {target:"Saudi Arabia", value:58},
+    {target:"Germany", value:40}
+  ];
+
+  const svg = d3.select("svg");
+  const tooltip = d3.select(".tooltip");
+
+  const projection = d3.geoNaturalEarth1()
+                       .scale(200)
+                       .translate([width/2, height/2]);
+  const path = d3.geoPath().projection(projection);
+
+  d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(worldData => {
+    const countries = topojson.feature(worldData, worldData.objects.countries).features;
+
+    svg.append("g")
+       .selectAll("path")
+       .data(countries)
+       .join("path")
+       .attr("class", "country")
+       .attr("d", path)
+       .on("mouseover", (event, d) => {
+         d3.select(event.currentTarget).classed("highlighted", true);
+         const countryName = d.properties.name;
+         const dataObj = exportData.find(o => o.target === countryName) || (countryName === "United Arab Emirates" ? {value: null} : null);
+         if (countryName === "United Arab Emirates") {
+           tooltip.text(`UAE (exports source)`);
+         } else if (dataObj) {
+           tooltip.text(`${countryName}: ${dataObj.value}`);
+         } else {
+           tooltip.text(countryName);
+         }
+         tooltip.style("display", "block");
+       })
+       .on("mousemove", (event) => {
+         tooltip.style("top", (event.pageY + 15) + "px")
+                .style("left", (event.pageX + 15) + "px");
+       })
+       .on("mouseout", event => {
+         d3.select(event.currentTarget).classed("highlighted", false);
+         tooltip.style("display", "none");
+       });
+
+    const uaeFeature = countries.find(d => d.properties.name === "United Arab Emirates");
+    const uaeCentroid = projection(d3.geoPath().centroid(uaeFeature));
+
+    const maxVal = d3.max(exportData, d => d.value);
+    const scaleWidth = d3.scaleLinear().domain([0, maxVal]).range([0, 15]);
+
+    exportData.forEach(d => {
+      const targetFeature = countries.find(f => f.properties.name === d.target);
+      if (!targetFeature) return;
+
+      const pt = projection(d3.geoPath().centroid(targetFeature));
+
+      const sankeyGen = d3.sankeyLinkHorizontal()
+                          .source(() => uaeCentroid)
+                          .target(() => pt);
+
+      const link = { source: uaeCentroid, target: pt, width: scaleWidth(d.value) };
+
+      svg.append("path")
+         .attr("class", "flow")
+         .attr("d", sankeyGen(link))
+         .attr("stroke-width", link.width)
+         .on("mouseover", (event) => {
+           tooltip.text(`UAE → ${d.target}: ${d.value}`);
+           tooltip.style("display", "block");
+         })
+         .on("mousemove", (event) => {
+           tooltip.style("top", (event.pageY + 15) + "px")
+                  .style("left", (event.pageX + 15) + "px");
+         })
+         .on("mouseout", () => tooltip.style("display", "none"));
+    });
+  });
+  </script>
+</body>
+</html>
