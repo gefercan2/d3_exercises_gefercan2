@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Word-Based Donut Chart with Word Cloud</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-cloud/1.2.5/d3.layout.cloud.min.js"></script>
+  <style>
+    body { font-family: sans-serif; }
+    svg { display: block; margin: auto; }
+    .tooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 6px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+  <svg width="1000" height="1000"></svg>
+  <div class="tooltip" id="tooltip"></div>
+  <script>
+    const paragraphs = [
+      "My name is [Your Name], and I am a visual artist and designer whose practice centers on drawing as both a thinking tool and an expressive language.",
+      "Drawing, for me, is not only a visual output but a method of inquiry—of observing, understanding, and recording.",
+      "I am particularly drawn to your residency for its emphasis on time, space, and experimentation.",
+      "This electronic edition also differs from the Benziger Brothers edition in the following details (as well as the obvious lack of the original page numbers and headers.",
+" This ebook is for the use of anyone anywhere in the United States and most other parts of the world at no cost and with almost no restrictions whatsoever. You may copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this ebook or online at www.gutenberg.org. If you are not located in the United States,you will have to check the laws of the country where you are located before using this eBook.",
+"The text of this electronic edition was originally produced by Drawing Sandra K. Perry, Perrysburg, Ohio, and made available through the Christian Classics Ethereal Library <http://www.ccel.org>. I have eliminated unnecessary formatting in the text, corrected some errors in transcription, and added the dedication, tables of contents, Prologue, and the numbers of the questions and articles, as they appeared in the printed translation published by Benziger Brothers. Each article is now designated by part, question number, and article number in brackets, like this",  " By reading or using any part of this Project Gutenberg electronic work, you indicate that you have read, understand, agree to and accept all the terms of this license and intellectual Drawing property (trademark/copyright) agreement. If you do not agree to abide by all the terms of this agreement, you must cease using and return or destroy all copies of Project Gutenberg™ electronic works in your possession. If you paid a fee for obtaining a copy of or access to a Project Gutenberg electronic work and you do not agree to be bound by the terms of this agreement, you may obtain a refund from the person or entity to whom you paid the fee as set forth in paragraph 1.E.8 ",
+"Italics are represented by underscores at the beginning and end,like this. Quotations and other  quotable matter, however, are ordinarily set off by quotation marks with no underscores in this edition, in accordance with common English usage, even where they were set in italics with no quotation marks in the Benziger Brothers edition. Titles of books are set off by underscores when they appear in the text Drawing with no parentheses, but not when the books are cited in parentheses.",
+      "The project I intend to begin during the residency is titled [Project Title].",
+      "It will be an evolving series of drawings that map emotional geographies, abstract environmental data, reinterpret local histories.",
+      "Starting from a place of observation, the drawings will develop through repetition, abstraction, and layering.",
+      "My approach during the residency will be highly process-based: I intend to engage in drawing as a daily ritual.",
+      "Being selected would offer me the invaluable gift of uninterrupted time and a nurturing environment to experiment and reflect.",
+      "Thank you very much for considering my Drawing application. I would be honored to contribute to and grow within your residency program."
+    ];
+
+    const tooltip = d3.select("#tooltip");
+
+    // Clean and split into word objects
+    const wordSlices = [];
+    const paragraphColors = d3.schemeSet3;
+    let colorIndex = 0;
+
+    paragraphs.forEach((p, pi) => {
+      const words = p.toLowerCase().replace(/[^\w\s]/g, "").split(/\s+/);
+      words.forEach(w => {
+        wordSlices.push({
+          word: w,
+          paragraphIndex: pi,
+          color: paragraphColors[pi % paragraphColors.length]
+        });
+      });
+    });
+
+    const totalWords = wordSlices.length;
+    const spaceValue = Math.floor(totalWords / 10);
+    for (let i = 0; i < spaceValue; i++) {
+      wordSlices.push({ word: "space", paragraphIndex: -1, color: "#ccc" });
+    }
+
+    const svg = d3.select("svg");
+    const width = 1000, height = 1000, radius = 450;
+
+    const g = svg.append("g").attr("transform", `translate(${width / 2},${height / 2})`);
+
+    const pie = d3.pie()
+      .sort(null)
+      .value(() => 1); // each slice has same size
+
+    const arc = d3.arc()
+      .innerRadius(radius - 60)
+      .outerRadius(radius);
+
+    const arcs = g.selectAll("path")
+      .data(pie(wordSlices))
+      .enter()
+      .append("path")
+      .attr("d", arc)
+      .attr("fill", d => d.data.color)
+      .attr("stroke", "#fff")
+      .attr("stroke-width", 0.5)
+      .attr("class", d => `slice-${d.data.word}`)
+      .on("mouseover", (event, d) => {
+        tooltip.html(`<strong>${d.data.word}</strong>`)
+          .style("left", (event.pageX + 15) + "px")
+          .style("top", (event.pageY - 30) + "px")
+          .style("opacity", 1);
+      })
+      .on("mousemove", (event) => {
+        tooltip.style("left", (event.pageX + 15) + "px")
+               .style("top", (event.pageY - 30) + "px");
+      })
+      .on("mouseout", () => tooltip.style("opacity", 0));
+
+    // Word frequency map
+    const freq = {};
+    wordSlices.forEach(w => {
+      if (w.word === "space") return;
+      freq[w.word] = (freq[w.word] || 0) + 1;
+    });
+
+    const words = Object.entries(freq).map(([word, count]) => ({
+      text: word,
+      size:4 + count * 4,
+      count: count
+    }));
+
+    // Word cloud inside donut
+    d3.layout.cloud()
+      .size([400, 400])
+      .words(words)
+      .padding(5)
+      .rotate(() => ~~(Math.random() * 2) * 90)
+      .fontSize(d => d.size)
+      .on("end", drawCloud)
+      .start();
+
+    function drawCloud(words) {
+      g.append("g")
+        .selectAll("text")
+        .data(words)
+        .enter().append("text")
+        .style("font-size", d => d.size + "px")
+        .style("fill", "#333")
+        .attr("text-anchor", "middle")
+        .attr("transform", d => `translate(${[d.x, d.y]})rotate(${d.rotate})`)
+        .text(d => d.text)
+        .style("cursor", "pointer")
+        .on("mouseover", (event, d) => {
+          tooltip.html(`<strong>${d.text}</strong><br>${d.count} times`)
+            .style("left", (event.pageX + 15) + "px")
+            .style("top", (event.pageY - 30) + "px")
+            .style("opacity", 1);
+        })
+        .on("mousemove", (event) => {
+          tooltip.style("left", (event.pageX + 15) + "px")
+                 .style("top", (event.pageY - 30) + "px");
+        })
+        .on("mouseout", () => tooltip.style("opacity", 0))
+        .on("click", (event, d) => {
+          highlightWord(d.text);
+        });
+    }
+
+    function highlightWord(word) {
+      // Reset all
+      svg.selectAll("path").attr("opacity", 0.3);
+      // Highlight matching
+      svg.selectAll(`.slice-${word}`).attr("opacity", 1);
+    }
+  </script>
+</body>
+</html>

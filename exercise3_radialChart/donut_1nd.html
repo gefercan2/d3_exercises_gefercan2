@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Residency Letter Analysis</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 12px;
+        }
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+        }
+        .tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .word-cloud text {
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .word-cloud text:hover {
+            opacity: 0.7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Residency Letter Analysis</h1>
+        <div class="chart-container">
+            <svg id="donut-chart"></svg>
+        </div>
+        <div class="legend" id="legend"></div>
+    </div>
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        // Sample residency letter text
+        const letterText = `Dear [Residency Name/Committee],
+
+My name is [Your Name], and I am a visual artist and designer whose practice centers on drawing as both a thinking tool and an expressive language. I am writing to express my sincere interest in the [Residency Name] as a space to deepen a body of work that investigates [insert project theme—e.g., memory, place, movement, etc.] through the medium of drawing.
+
+Drawing, for me, is not only a visual output but a method of inquiry—of observing, understanding, and recording. I am particularly drawn to your residency for its emphasis on time, space, and experimentation. I see it as the perfect context to expand my drawing practice beyond its current boundaries, allowing for daily immersion, exploration of materials, and reflection.
+
+The project I intend to begin during the residency is titled [Project Title]. It will be an evolving series of drawings that [describe concept briefly—e.g., map emotional geographies, abstract environmental data, reinterpret local histories, etc.]. Starting from a place of observation, the drawings will develop through repetition, abstraction, and layering—allowing the process itself to lead the direction of the work.
+
+My approach during the residency will be highly process-based: I intend to engage in drawing as a daily ritual, using a variety of media (graphite, ink, collage, etc.) while responding to the physical and emotional atmosphere of the residency setting. I hope to also invite feedback through open studio discussions or informal critiques if the structure allows.
+
+Being selected would offer me the invaluable gift of uninterrupted time and a nurturing environment to experiment and reflect. It would also provide an opportunity to connect with a community of artists and thinkers, which I believe would meaningfully influence the evolution of this drawing-based body of work.
+
+Thank you very much for considering my application. I would be honored to contribute to and grow within your residency program.
+
+Warmly,
+[Your Name]
+[Website or Portfolio link if applicable]`;
+
+        // Parse the text into paragraphs
+        const paragraphs = letterText.trim().split('\n\n').filter(p => p.trim().length > 0);
+        
+        // Count words in each paragraph
+        const paragraphData = paragraphs.map((paragraph, index) => {
+            const words = paragraph.trim().split(/\s+/).filter(word => word.length > 0);
+            return {
+                index: index,
+                text: paragraph,
+                wordCount: words.length,
+                type: 'paragraph'
+            };
+        });
+
+        // Calculate total words
+        const totalWords = paragraphData.reduce((sum, p) => sum + p.wordCount, 0);
+        
+        // Calculate spaces between paragraphs (uniform quantity = 1/10 of total)
+        const spaceValue = Math.round(totalWords / 10);
+        const numberOfSpaces = paragraphs.length - 1; // spaces between paragraphs
+        
+        // Create space segments
+        const spaceData = Array.from({length: numberOfSpaces}, (_, i) => ({
+            index: i,
+            text: `Space ${i + 1}`,
+            wordCount: spaceValue,
+            type: 'space'
+        }));
+
+        // Combine all data
+        const allData = [];
+        paragraphData.forEach((p, i) => {
+            allData.push(p);
+            if (i < paragraphData.length - 1) {
+                allData.push(spaceData[i]);
+            }
+        });
+
+        // Calculate word frequencies for word cloud
+        const allWords = letterText.toLowerCase()
+            .replace(/[^\w\s]/g, ' ')
+            .split(/\s+/)
+            .filter(word => word.length > 2)
+            .filter(word => !['the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his', 'how', 'man', 'new', 'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did', 'its', 'let', 'put', 'say', 'she', 'too', 'use'].includes(word));
+
+        const wordFreq = {};
+        allWords.forEach(word => {
+            wordFreq[word] = (wordFreq[word] || 0) + 1;
+        });
+
+        const wordCloudData = Object.entries(wordFreq)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 20)
+            .map(([word, freq]) => ({word, freq}));
+
+        // Set up SVG
+        const width = 600;
+        const height = 600;
+        const radius = Math.min(width, height) / 2;
+        const innerRadius = radius * 0.4;
+        const outerRadius = radius * 0.8;
+
+        const svg = d3.select("#donut-chart")
+            .attr("width", width)
+            .attr("height", height);
+
+        const g = svg.append("g")
+            .attr("transform", `translate(${width/2}, ${height/2})`);
+
+        // Color scales
+        const paragraphColors = d3.scaleOrdinal()
+            .domain(paragraphData.map((_, i) => i))
+            .range(d3.schemeSet3);
+
+        const spaceColor = "#e0e0e0";
+
+        // Create pie generator
+        const pie = d3.pie()
+            .value(d => d.wordCount)
+            .sort(null);
+
+        // Create arc generator
+        const arc = d3.arc()
+            .innerRadius(innerRadius)
+            .outerRadius(outerRadius);
+
+        // Create tooltip
+        const tooltip = d3.select("#tooltip");
+
+        // Create the donut chart
+        const arcs = g.selectAll(".arc")
+            .data(pie(allData))
+            .enter().append("g")
+            .attr("class", "arc");
+
+        arcs.append("path")
+            .attr("d", arc)
+            .attr("fill", d => {
+                if (d.data.type === 'space') return spaceColor;
+                return paragraphColors(d.data.index);
+            })
+            .attr("stroke", "white")
+            .attr("stroke-width", 2)
+            .on("mouseover", function(event, d) {
+                tooltip.style("opacity", 1)
+                    .html(`
+                        <strong>${d.data.type === 'space' ? 'Space' : 'Paragraph ' + (d.data.index + 1)}</strong><br>
+                        Words: ${d.data.wordCount}<br>
+                        Percentage: ${((d.data.wordCount / (totalWords + spaceValue * numberOfSpaces)) * 100).toFixed(1)}%
+                    `)
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 10) + "px");
+            })
+            .on("mouseout", function() {
+                tooltip.style("opacity", 0);
+            });
+
+        // Create word cloud in the center
+        const wordCloudG = g.append("g").attr("class", "word-cloud");
+
+        // Simple word cloud layout
+        const maxFreq = Math.max(...wordCloudData.map(d => d.freq));
+        const fontScale = d3.scaleLinear()
+            .domain([1, maxFreq])
+            .range([8, 24]);
+
+        // Position words in a rough circle
+        const angleStep = (2 * Math.PI) / wordCloudData.length;
+        const cloudRadius = innerRadius * 0.7;
+
+        wordCloudData.forEach((d, i) => {
+            const angle = i * angleStep;
+            const r = cloudRadius * (0.3 + Math.random() * 0.7);
+            const x = Math.cos(angle) * r;
+            const y = Math.sin(angle) * r;
+
+            wordCloudG.append("text")
+                .attr("x", x)
+                .attr("y", y)
+                .attr("text-anchor", "middle")
+                .attr("dominant-baseline", "middle")
+                .attr("font-size", fontScale(d.freq) + "px")
+                .attr("fill", d3.schemeCategory10[i % 10])
+                .text(d.word)
+                .style("opacity", 0.8);
+        });
+
+        // Create legend
+        const legend = d3.select("#legend");
+        
+        // Add paragraph legend items
+        paragraphData.forEach((p, i) => {
+            const legendItem = legend.append("div")
+                .attr("class", "legend-item");
+            
+            legendItem.append("div")
+                .attr("class", "legend-color")
+                .style("background-color", paragraphColors(i));
+            
+            legendItem.append("span")
+                .text(`Paragraph ${i + 1} (${p.wordCount} words)`);
+        });
+
+        // Add space legend item
+        const spaceItem = legend.append("div")
+            .attr("class", "legend-item");
+        
+        spaceItem.append("div")
+            .attr("class", "legend-color")
+            .style("background-color", spaceColor);
+        
+        spaceItem.append("span")
+            .text(`Spaces (${spaceValue} words each)`);
+
+        // Add summary
+        const summary = legend.append("div")
+            .style("margin-top", "20px")
+            .style("font-weight", "bold")
+            .text(`Total: ${totalWords + spaceValue * numberOfSpaces} word units`);
+    </script>
+</body>
+</html>
