@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arc Diagram</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0px;
+      padding:0px;
+      height:auto;
+      background-color: #f0f0f0;
+    }
+    #container {
+      width:100%;
+      height:auto;
+      align-items: center;
+      margin: 0px;
+      padding:0px;
+    }
+
+    #title {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    #graphic-container {
+      background-color: #e0e0e0;
+      width:100%;
+      padding: 0px;
+      position: relative;
+    }
+    .tooltip {
+      position: absolute;
+      background-color: white;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+    .tooltip a {
+      color: blue;
+      text-decoration: underline;
+    }
+    .legend {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 0.9em;
+      background: white;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+    .legend div {
+      display: flex;
+      align-items: center;
+    }
+    .legend div span {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      margin-right: 5px;
+    }
+   #arc-diagram {
+      width:100%;
+      height:auto;
+      padding:10% 0% 10% 0%;
+      margin:0px;
+      background-color: #ceafb4;
+    }
+  </style>
+</head>
+
+
+
+
+<body>
+
+  <div id="container">
+    <div id="title">
+      <h1 style="font-size: 2em;">Title</h1>
+      <p style="font-size: 1em;">This is the graphic and this is its title</p>
+    </div>
+    <div id="graphic-container">
+      <div class="legend">
+        <div><span style="background-color: orange;"></span> Artists</div>
+        <div><span style="background-color: steelblue;"></span> City</div>
+      </div>
+      <svg id="arc-diagram"></svg>
+      <div class="tooltip"></div>
+    </div>
+  </div>
+
+
+
+
+  <script>
+    const data = {
+            nodes: [
+                  { name: "Veronese", 
+                  type: "artist", 
+                  birth: "b. 1528", 
+                  death: "d. 1588", 
+                  mainDiscipline: "painter", 
+                  value: 0.5, 
+                  link: "https://en.wikipedia.org/wiki/Paolo_Veronese" },
+
+                  { name: "Tintoretto", 
+                  type: "artist", 
+                  birth: "b. 1518", 
+                  death: "d. 1594", 
+                  mainDiscipline: "painter", 
+                  value: 0.5, 
+                  link: "https://en.wikipedia.org/wiki/Tintoretto" },
+
+                  { name: "VENICE", 
+                  type: "city", 
+                  birth: "city state", 
+                  death: "(Veneto)", 
+                  mainDiscipline: "Republic of Venice (La Serenissima)", 
+                  value: 5, 
+                  link: "https://en.wikipedia.org/wiki/Republic_of_Venice" },
+
+                  { name: "MANTUA", 
+                  type: "city", 
+                  birth: "city state", 
+                  death: "", 
+                  discipline: "Duchy of Mantua",
+                  value: 3},
+
+                  {name: "MILAN",
+                  type: "city",
+                  birth: "city state",
+                  death: "(Lombardia)",
+                  discipline: "Duchy oF Milan",
+                  value: 3},
+                         
+		              {name: "PADUA",
+                  type: "city",
+                  birth: "city state",
+                  death: "",
+                  discipline: "",
+                  value: 3 },
+               
+                  {name: "SIENA",
+                  type: "city",
+                    birth: "city state",
+                    death: "(Tuscany)",
+                    discipline: "Republic of Siena",
+                    value: "2"},
+
+                  {name: "URBINO",
+                    type: "city",
+                    birth: "city state",
+                    death: "",
+                    discipline: "Duchy of Urbino",
+                    value: "2"},
+
+                  {
+                    name: "Pontormo",
+                    type: "artist",
+                    birth: " b. 1494",
+                    death: " Pontorme ",
+                    discipline: " d. 1557",
+                    link: " Florence ",
+                    value: "painter"
+                  },
+                  {
+                    name: "Andrea del Sarto",
+                    type: "artist",
+                    birth: "b. 1486",
+                    death: "d. 1531",
+                    discipline: "painter",
+                    value: "0.5"
+                  },
+                  {
+                    name: "Titian",
+                    type: "artist",
+                    birth: "b. 1485",
+                    death: "d. 1576",
+                    discipline: "painter",
+                    value: "0.5"
+                  },
+                  {
+                    name: "Raphael",
+                    type: "artist",
+                    birth: " b. 1483",
+                    death: "d. 1520 Rome",
+                    value: "0.5"
+                  },
+                  {
+                    name: "Giorgione",
+                    type: "artist",
+                    birth: "b. 1473-78",
+                    death: "d. 1510",
+                    discipline: "painter",
+                    "link": "",
+                    value: "0.5"
+                  },
+                  {
+                    name: "Michelangelo",
+                    type: "artist",
+                    birth: "b. 1475",
+                    death: "d. 1564",
+                    discipline: "sculptor",
+                    "link": "",
+                    value: "0.5"
+                  },
+              
+                  {name: "FLORENCE", 
+                  type: "city", 
+                  birth: "city state", 
+                  death: "(Tuscany)",
+                  discipline: "Republic of Florence",
+                  value: "4"},
+
+                  {
+                    name: "Leonardo",
+                    type: "artist",
+                    birth: " b. 1452",
+                    death: " Vinci ",
+                    discipline: "d. 1519",
+                    link: "painter",
+                    value: ""
+                  },
+                  {
+                    name: "Perugino",
+                    type: "artist",
+                    birth: "b. 1446",
+                    death: "d. 1523",
+                    discipline: "painter",
+                    link: "painter",
+                    value: "0.5"
+                  },
+            
+                  {
+                    name: "Bramante",
+                    type: "artist",
+                    birth: "b. 1444",
+                    death: "d. 1514",
+                    discipline: "architect",
+                    value: "0.5"
+                  },
+                  {
+                    name: "Verrocchio",
+                    type: "artist",
+                    birth: "b. 1435",
+                    death: "d. 1488",
+                    discipline: "sculptor",
+                    value: "0.5"
+                  },
+                  {
+                    name: "Mantegna",
+                    type: "artist",
+                    birth: "b. 1431",
+                    death: "d. 1506",
+                    discipline: "painter",
+                    value: "0.5"
+                  },
+                {
+                  name: "Giovanni Bellini",
+                  type: "artist",
+                  birth: "b. 1430",
+                  death: "d. 1516",
+                  discipline: "painter",
+                  value: "0.5"
+                },
+                {
+                  name: "Gentile Bellini",
+                  type: "artist",
+                  birth: "b. 1429",
+                  death: "d. 1507",
+                  discipline: "painter",
+                  value: "0.5"
+                },    
+                {name: "ROME",
+                    type: "city",
+                    birth: "city state",
+                    death: "(Lazio)",
+                    discipline: "Papal Estates",
+                    value: "6"},
+                {
+                  name: "Antonello de Messina",
+                  type: "artist",
+                  birth: "b. 1425,1430",
+                  death: "d. 1479",
+                  discipline: "painter",
+                  value: "0.5"
+                },
+                {
+                  name: "Piero della Francesca",
+                  type: "artist",
+                  birth: "b. 1415",
+                  death: "d. 1492",
+                  discipline: "painter",
+                  value: "0.5"
+                },
+                {
+                  name: "Filippo Lippi",
+                  type: "artist",
+                  birth: "b. 1406",
+                  death: "d. 1469",
+                  discipline: "painter",
+                  value: "0.5"
+                },
+                { name: "Alberti",
+                  type: "artist",
+                  birth: "b. 1404",
+                  death: "d. 1472",
+                  discipline: "architect",
+                  value: "0.5"
+                },
+                {name: "Massaccio",
+                  type: "artist",
+                  birth: "b. 1401",
+                  death: "d. 1428",
+                  discipline: "painter",
+                  value: "0.5"
+                },
+                {
+                  name: "Paolo Ucello",
+                  type: "artist",
+                  birth: "b. 1397",
+                  death: "d. 1475",
+                  discipline: "painter",
+                  value: "0.5"
+                },
+                {
+                  name: "Fra Angelico",
+                  type: "artist",
+                  birth: "b. 1395",
+                  death: "d. 1455",
+                  discipline: "painter",
+                  value: "0.5"
+                },
+                {
+                  name: "Donatello",
+                  type: "artist",
+                  birth: "b. 1386",
+                  death: "d. 1466",
+                  discipline: "sculptor",
+                  value: "0.5"
+                },
+                {
+                  name: "Brunelleschi",
+                  type: "artist",
+                  birth: "b. 1377",
+                  death: "d. 1446",
+                  discipline: "sculptor",
+                  value: "0.5"
+                },
+                {
+                  name: "Taddeo Gaddi",
+                  type: "artist",
+                  birth: "b. 1300",
+                  death: " d",
+                  discipline: " 1366 ",
+                  value: ""
+                },
+                {name: "NAPLES", 
+                type: "city", 
+                birth: "Kingdom", 
+                death: " Campania",  
+                discipline: " Sicilia, Kingdom of Naples", 
+                value: "5"},
+                {
+                  name: "Duccio Buonisegna",
+                  type: "artist",
+                  birth: "b. 1255",
+                  death: "d. 1318–1319",
+                  discipline: "painter",
+                  value: "0.5"
+                },
+                {
+                  name: "Giovanni Pisano",
+                  type: "artist",
+                  birth: "b. 1250",
+                  death: "d. 1315",
+                  discipline: "sculptor",
+                  value: "0.5"
+                },
+                {
+                  name: "Giulio Romano",
+                  type: "artist",
+                  birth: " b. 1499",
+                  death: " Roma ",
+                  discipline: " d. 1546",
+                  value: "0.5"
+                },
+                {
+                  name: "Sandro Botticelli",
+                  type: "artist",
+                  birth: "b. 1445",
+                  death: "d. 1510",
+                  discipline: "painter",
+                  value: "0.5"
+                },
+                {
+                  name: "Jacopo Bellini",
+                  type: "artist",
+                  birth: "b. 1396",
+                  death: " d. 1470",
+                  discipline: " Venice ",
+                  value: "0.5"
+                },
+                {
+                  name: "Giotto di Bondone",
+                  type: "artist",
+                  birth: "b. 1267",
+                  death: "d. 1337",
+                  discipline: "painter",
+                  value: "0.5"
+                },
+                {
+                  name: "Cimabue",
+                  type: "artist",
+                  birth: "b. 1240",
+                  death: "d. 1302",
+                  discipline: "painter",
+                  value: "0.5"
+                },
+                {
+                  name: "PERUGIA",
+                  type: "city",
+                  birth: "",
+                  death: "",
+                  discipline: "",
+                  value: "2"
+                }
+      ],
+      links: [
+              { source: "VENICE", target: "Veronese" },
+              { source: "VENICE", target: "Tintoretto" },
+              { source: "VENICE", target: "Veronese" },
+              { source: "VENICE", target: "Tintoretto" },
+              {source: "VENICE", target: "Andrea Palladio" },
+              {source:"VENICE",target:"Andrea Palladio"},
+              {source:"VENICE",target:"Antonello de Messina"},
+              {source:"VENICE",target:"Gentile Bellini"},
+              {source:"VENICE",target:"Giorgione"},
+              {source:"VENICE",target:"Giovanni Bellini"},
+              {source:"VENICE",target:"Jacopo Bellini"},
+              {source:"VENICE",target:"Mantegna"},
+              {source:"VENICE",target:"ROME"},
+              {source:"VENICE",target:"Titian"},
+              {source:"VENICE", target:"Verrocchio"},
+	    	      {source:"FLORENCE", target:"ROME" },
+  	    	    {source:"FLORENCE", target:"Pontormo"},
+ 	    	      {source:"FLORENCE",target:"Andrea del Sarto"},
+  	    	    {source:"FLORENCE",target:"Alberti"},
+ 	    	      {source:"FLORENCE",target:"Sandro Botticelli"},
+              {source:"FLORENCE",target:"Brunelleschi"},
+              {source:"FLORENCE",target:"Cimabue"},
+              {source:"FLORENCE", target:"Duccio Buonisegna"},
+              {source:"FLORENCE", target:"Donatello"},
+  	          {source:"FLORENCE",target:"Filippo Lippi"},
+ 	            {source:"FLORENCE",target:"Fra Angelico"},
+              {source:"FLORENCE",target:"Ghirlandaio" },
+              {source:"FLORENCE",target:"Giotto di Bondone"},
+              {source:"FLORENCE",target:"Leonardo"},
+              {source:"FLORENCE",target:"Mantegna"},
+              {source:"FLORENCE",target:"Massaccio"},
+              {source:"FLORENCE",target:"Michelangelo"},
+              {source:"FLORENCE",target:"Perugino"},
+              {source:"FLORENCE",target:"Piero della Francesca"},
+ 	            {source:"FLORENCE",target:"Raphael"},
+              {source:"FLORENCE",target:"ROME"},
+              {source:"FLORENCE",target:"Taddeo Gaddi"},
+              {source:"FLORENCE",target:"Verrocchio"},
+              {source:"FLORENCE",target:"Paolo Ucello"},
+              {source:"Gentile Bellini",target:"Giovanni Bellini"},
+              {source:"MANTUA",target:"Giulio Romano"},
+              {source:"MANTUA",target:"Alberti"},
+              {source:"MANTUA",target:"Andrea Palladio"},
+              {source:"MANTUA",target:"Mantegna"},
+              {source:"MILAN",target:"Bramante"},
+              {source:"MILAN",target:"Leonardo"},
+              {source:"NAPLES",target:"ROME"},
+              {source:"NAPLES",target:"Antonello de Messina"},
+              {source:"PADUA",target:"Donatello"},
+              {source:"PADUA",target:"Filippo Lippi"},
+              {source:"PADUA",target:"Giotto di Bondone"},
+              {source:"PADUA",target:"Jacopo Bellini"},
+              {source:"PADUA",target:"Mantegna"},
+              {source:"Paolo Ucello",target:"FLORENCE"},
+              {source:"PERUGIA",target:"Perugino"},
+              {source:"ROME",target:"Sandro Botticelli"},
+              {source:"ROME",target:"Fra Angelico"},
+              {source:"ROME",target:"Giulio Romano"},
+              {source:"ROME",target:"Sandro Botticelli"},
+              {source:"ROME",target:"Bramante"},
+              {source:"ROME",target:"Cimabue"},
+              {source:"ROME",target:"Donatello"},
+              {source:"ROME",target:"Leonardo"},
+              {source:"ROME",target:"Michelangelo"},
+              {source:"ROME",target:"Perugino"},
+              {source:"ROME",target:"Raphael"},
+              {source:"ROME",target:"NAPLES"},
+              {source:"SIENA", target:"Duccio Buonisegna"},
+              {source:"SIENA", target:"FLORENCE"},
+              {source:"SIENA",target:"Giovanni Pisano"},
+              {source:"URBINO",target:"Bramante"},
+              {source:"URBINO",target:"Piero della Francesca"},
+ 	            {source:"URBINO",target:"Raphael"}
+      ]
+    };
+
+    const width = 1900, height = 200, radius = 9;
+    const svg = d3.select("#arc-diagram").style("opacity", 0.6);
+    const tooltip = d3.select(".tooltip");
+
+    // Create scales
+    const xScale = d3.scalePoint()
+      .domain(data.nodes.map(d => d.name))
+      .range([150, width - 150]);
+
+    // Draw nodes
+    const nodes = svg.append("g")
+      .selectAll("circle")
+      .data(data.nodes)
+      .enter().append("circle")
+      .attr("cx", d => xScale(d.name))
+      .attr("cy", height / 2)
+      .attr("r", radius)
+      .attr("fill", d => d.type === "artist" ? "orange" : "steelblue")
+      .on("mouseover", handleMouseOver)
+      .on("mouseout", handleMouseOut)
+      .on("click", highlight);
+
+    // Draw labels
+    svg.append("g")
+      .selectAll("text")
+      .data(data.nodes)
+      .enter().append("text")
+      .attr("x", d => xScale(d.name)+10)
+      .attr("y", height / 2 - radius - 10)
+      .attr("transform", "rotate(-2)" )
+      .attr("text-anchor", "middle")
+      .attr("font-size", "10px")
+      .text(d => d.name);
+
+
+
+    // Draw links
+    const links = svg.append("g")
+      .selectAll("path")
+      .data(data.links)
+      .enter().append("path")
+      .attr("d", d => {
+        const sourceX = xScale(d.source);
+        const targetX = xScale(d.target);
+        const midX = (sourceX + targetX) / 2;
+        return `M${sourceX},${height / 2} Q${midX},-350 ${targetX},${height / 2}`;})
+      .attr("stroke", "gray")
+      .attr("stroke-width", 1.5)
+      .attr("fill", "none")
+      .on("mouseover", handleMouseOver)
+      .on("mouseout", handleMouseOut)
+      .on("click", highlight);
+      
+      //mouse over
+    function handleMouseOver(event, d) {
+      tooltip.style("opacity", 1)
+        .html(`
+          <strong>${d.name}</strong><br>
+          ${d.mainDiscipline || ""} ${d.birth || ""} ${d.death || ""}<br>
+          <a href="${d.link}" target="_blank">Learn more</a>
+        `)
+        .style("left", (event.pageX + 10) + "px")
+        .style("top", (event.pageY + 10) + "px");
+    }
+    //mouse out
+    function handleMouseOut() {
+      tooltip.style("opacity", 0);
+    }
+
+    function highlight(event, d) {
+      svg.style("opacity", 0.6); // Reset opacity
+      const targets = data.links.filter(link => link.source === d.name || link.target === d.name).map(link => [link.source, link.target]).flat();
+      nodes.filter(node => targets.includes(node.name)).style("opacity", 1);
+      links.filter(link => link.source === d.name || link.target === d.name).style("opacity", 1);
+    }
+
+
+  </script>
+</body>
+</html>
