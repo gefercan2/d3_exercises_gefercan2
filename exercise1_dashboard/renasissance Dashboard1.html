@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Venice Artists Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            min-height: 100vh;
+        }
+
+        .dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+        }
+
+        .network-container, .timeline-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .network-container {
+            height: 500px;
+            position: relative;
+        }
+
+        .timeline-container {
+            height: 200px;
+            position: relative;
+        }
+
+        .color-legend {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .legend-symbol {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            border: 2px solid white;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            pointer-events: none;
+            z-index: 1000;
+            max-width: 250px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .tooltip a {
+            color: #66ccff;
+            text-decoration: none;
+            display: block;
+            margin-top: 8px;
+        }
+
+        .tooltip a:hover {
+            text-decoration: underline;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+            color: #66ccff;
+        }
+
+        .network-node {
+            cursor: pointer;
+            stroke: white;
+            stroke-width: 2;
+            transition: opacity 0.3s ease;
+        }
+
+        .network-link {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.3);
+            stroke-width: 2;
+            transition: opacity 0.3s ease;
+        }
+
+        .node-label {
+            fill: white;
+            font-size: 11px;
+            text-anchor: middle;
+            pointer-events: none;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+        }
+
+        .timeline-axis {
+            stroke: white;
+            stroke-width: 2;
+        }
+
+        .timeline-tick {
+            stroke: rgba(255, 255, 255, 0.6);
+            stroke-width: 1;
+        }
+
+        .timeline-label {
+            fill: white;
+            font-size: 10px;
+            text-anchor: middle;
+        }
+
+        .timeline-node {
+            cursor: pointer;
+            stroke: white;
+            stroke-width: 2;
+            transition: opacity 0.3s ease;
+        }
+
+        .timeline-arc {
+            fill: none;
+            stroke: #ff4444;
+            stroke-width: 3;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .timeline-node-label {
+            fill: white;
+            font-size: 9px;
+            text-anchor: middle;
+            pointer-events: none;
+            font-weight: bold;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard {
+                padding: 10px;
+                gap: 20px;
+            }
+            
+            .network-container {
+                height: 400px;
+            }
+            
+            .color-legend {
+                font-size: 10px;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+
+
+
+
+
+<body>
+    <div class="dashboard">
+        <div class="network-container">
+            <div class="section-title">Venice Artists Network</div>
+            <div class="color-legend">
+                <div class="legend-item">
+                    <div class="legend-symbol" style="background: #ff4444; transform: rotate(45deg);"></div>
+                    <span>Artists</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-symbol" style="background: #4444ff; clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);"></div>
+                    <span>Cities</span>
+                </div>
+            </div>
+            <svg id="network-svg"></svg>
+        </div>
+        
+        <div class="timeline-container">
+            <div class="section-title">Timeline (1400-1600)</div>
+            <svg id="timeline-svg"></svg>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip" style="opacity: 0;"></div>
+
+    <script>
+        // Data
+        const nodes = [
+            {
+                name: "Veronese",
+                type: "artist",
+                birth: "b. 1528",
+                death: "d. 1588",
+                "main discipline": "painter",
+                value: "0.5",
+                link: "https://en.wikipedia.org/wiki/Paolo_Veronese",
+                birthYear: 1528,
+                deathYear: 1588
+            },
+            {
+                name: "Tintoretto",
+                type: "artist",
+                birth: "b. 1518",
+                death: "d. 1594",
+                "main discipline": "painter",
+                value: "0.5",
+                link: "https://en.wikipedia.org/wiki/Tintoretto",
+                birthYear: 1518,
+                deathYear: 1594
+            },
+            {
+                name: "VENICE",
+                type: "city",
+                birth: "city state",
+                death: "(Veneto)",
+                "main discipline": "Republic of Venice (La Serenissima)",
+                link: "https://en.wikipedia.org/wiki/Republic_of_Venice",
+                value: "5"
+            },
+            {
+                name: "Bassano",
+                type: "artist",
+                birth: "b. 1510",
+                death: "d. 1592",
+                "main discipline": "painter",
+                value: "0.5",
+                link: "https://en.wikipedia.org/wiki/Jacopo_Bassano",
+                birthYear: 1510,
+                deathYear: 1592
+            },
+            {
+                name: "Palladio",
+                type: "artist",
+                birth: "b. 1508",
+                death: "d. 1580",
+                "main discipline": "architect",
+                value: "0.5",
+                link: "https://en.wikipedia.org/wiki/Andrea_Palladio",
+                birthYear: 1508,
+                deathYear: 1580
+            }
+        ];
+
+        const links = [
+            { city: "VENICE", artists: "Bassano" },
+            { city: "VENICE", artists: "Veronese" },
+            { city: "VENICE", artists: "Palladio" },
+            { city: "VENICE", artists: "Tintoretto" }
+        ];
+
+
+
+        //------------------Convert links to proper format---------------
+        const networkLinks = links.map(link => ({
+            source: link.city,
+            target: link.artists
+        }));
+
+        //------------------Global state---------------------------
+        let selectedNode = null;
+
+
+
+        //------------------Network Graph Setup--------------------
+        const networkSvg = d3.select("#network-svg");
+        const networkContainer = d3.select(".network-container");
+        
+        function updateNetworkSize() {
+            const containerRect = networkContainer.node().getBoundingClientRect();
+            const width = containerRect.width - 40;
+            const height = containerRect.height - 60;
+            
+            networkSvg.attr("width", width).attr("height", height);
+            
+            return { width, height };
+        }
+
+        let { width: networkWidth, height: networkHeight } = updateNetworkSize();
+
+
+        // ------------------Timeline Setup-----------------------
+        const timelineSvg = d3.select("#timeline-svg");
+        const timelineContainer = d3.select(".timeline-container");
+        
+        function updateTimelineSize() {
+            const containerRect = timelineContainer.node().getBoundingClientRect();
+            const width = containerRect.width - 40;
+            const height = containerRect.height - 60;
+            
+            timelineSvg.attr("width", width).attr("height", height);
+            
+            return { width, height };
+        }
+
+        let { width: timelineWidth, height: timelineHeight } = updateTimelineSize();
+
+        //------------------ Tooltip----------------------------------
+        const tooltip = d3.select("#tooltip");
+
+        // Network Simulation--------------------------
+        const simulation = d3.forceSimulation(nodes)
+            .force("link", d3.forceLink(networkLinks).id(d => d.name).distance(100))
+            .force("charge", d3.forceManyBody().strength(-300))
+            .force("center", d3.forceCenter(networkWidth / 2, networkHeight / 2));
+
+        // Create network elements
+        const networkGroup = networkSvg.append("g");
+
+        const link = networkGroup.append("g")
+            .selectAll("path")
+            .data(networkLinks)
+            .join("path")
+            .attr("class", "network-link");
+
+        const node = networkGroup.append("g")
+            .selectAll("path")
+            .data(nodes)
+            .join("path")
+            .attr("class", "network-node")
+            .attr("fill", d => d.type === "artist" ? "#ff4444" : "#4444ff")
+            .attr("d", d => {
+                if (d.type === "artist") {
+                    // Diamond/rhombus shape
+                    return "M 0,-15 L 15,0 L 0,15 L -15,0 Z";
+                } else {
+                    // Octagon shape
+                    const size = 18;
+                    const angle = Math.PI / 4;
+                    let path = "M ";
+                    for (let i = 0; i < 8; i++) {
+                        const x = size * Math.cos(i * angle);
+                        const y = size * Math.sin(i * angle);
+                        path += (i === 0 ? "" : "L ") + x + "," + y + " ";
+                    }
+                    path += "Z";
+                    return path;
+                }
+            })
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended))
+            .on("click", handleNodeClick)
+            .on("mouseover", showTooltip)
+            .on("mouseout", hideTooltip);
+
+        const nodeLabels = networkGroup.append("g")
+            .selectAll("text")
+            .data(nodes)
+            .join("text")
+            .attr("class", "node-label")
+            .text(d => d.name)
+            .attr("dy", 35);
+
+        //------------------ Timeline setup----------------------------
+        const timelineScale = d3.scaleLinear()
+            .domain([1300, 1600])
+            .range([50, timelineWidth - 50]);
+
+        const timelineGroup = timelineSvg.append("g");
+
+        // Timeline axis------------------
+        timelineGroup.append("line")
+            .attr("class", "timeline-axis")
+            .attr("x1", 50)
+            .attr("y1", timelineHeight / 2)
+            .attr("x2", timelineWidth - 50)
+            .attr("y2", timelineHeight / 2);
+
+        // Timeline ticks and labels
+        const years = [1300, 1325, 1350, 1375,1400, 1425, 1450, 1475, 1500, 1525, 1550, 1575, 1600];
+        
+        timelineGroup.selectAll(".timeline-tick")
+            .data(years)
+            .join("line")
+            .attr("class", "timeline-tick")
+            .attr("x1", d => timelineScale(d))
+            .attr("y1", timelineHeight / 2 - 10)
+            .attr("x2", d => timelineScale(d))
+            .attr("y2", timelineHeight / 2 + 10);
+
+        timelineGroup.selectAll(".timeline-year-label")
+            .data(years)
+            .join("text")
+            .attr("class", "timeline-label")
+            .attr("x", d => timelineScale(d))
+            .attr("y", timelineHeight / 2 + 25)
+            .text(d => d);
+
+        // Create timeline nodes for artists
+        const artistNodes = nodes.filter(d => d.type === "artist" && d.birthYear);
+        const timelineNodes = [];
+        const timelineArcs = [];
+
+        artistNodes.forEach(artist => {
+            // Birth node (circle)
+            timelineNodes.push({
+                ...artist,
+                year: artist.birthYear,
+                nodeType: "birth",
+                id: `${artist.name}-birth`
+            });
+            
+            // Death node (square)
+            timelineNodes.push({
+                ...artist,
+                year: artist.deathYear,
+                nodeType: "death",
+                id: `${artist.name}-death`
+            });
+
+            // Arc data
+            timelineArcs.push({
+                ...artist,
+                startYear: artist.birthYear,
+                endYear: artist.deathYear,
+                id: `${artist.name}-arc`
+            });
+        });
+
+        //------------------ Timeline arcs (life spans)
+        const timelineArcElements = timelineGroup.selectAll(".timeline-arc")
+            .data(timelineArcs)
+            .join("path")
+            .attr("class", "timeline-arc")
+            .attr("d", d => {
+                const x1 = timelineScale(d.startYear);
+                const x2 = timelineScale(d.endYear);
+                const y = timelineHeight / 2 - 40;
+                const midX = (x1 + x2) / 2;
+                const controlY = y - 20;
+                return `M ${x1} ${y} Q ${midX} ${controlY} ${x2} ${y}`;
+            });
+
+        // Timeline nodes
+        const timelineNodeElements = timelineGroup.selectAll(".timeline-node")
+            .data(timelineNodes)
+            .join(
+                enter => enter.append(d => {
+                    if (d.nodeType === "birth") {
+                        return document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    } else {
+                        return document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                    }
+                })
+            )
+            .attr("class", "timeline-node")
+            .attr("fill", "#ff4444")
+            .each(function(d) {
+                if (d.nodeType === "birth") {
+                    d3.select(this)
+                        .attr("cx", timelineScale(d.year))
+                        .attr("cy", timelineHeight / 2 - 40)
+                        .attr("r", 6);
+                } else {
+                    d3.select(this)
+                        .attr("x", timelineScale(d.year) - 6)
+                        .attr("y", timelineHeight / 2 - 40 - 6)
+                        .attr("width", 12)
+                        .attr("height", 12);
+                }
+            })
+            .on("click", handleTimelineNodeClick)
+            .on("mouseover", showTooltip)
+            .on("mouseout", hideTooltip);
+
+        // Timeline node labels
+        const timelineNodeLabels = timelineGroup.selectAll(".timeline-node-label")
+            .data(timelineNodes)
+            .join("text")
+            .attr("class", "timeline-node-label")
+            .attr("x", d => timelineScale(d.year))
+            .attr("y", d => timelineHeight / 2 - 55)
+            .text(d => `${d.name} ${d.nodeType === 'birth' ? 'b.' : 'd.'} ${d.year}`);
+
+        // Simulation tick
+        simulation.on("tick", () => {
+            link.attr("d", d => {
+                const dx = d.target.x - d.source.x;
+                const dy = d.target.y - d.source.y;
+                const dr = Math.sqrt(dx * dx + dy * dy) * 2;
+                return `M ${d.source.x},${d.source.y} A ${dr},${dr} 0 0,1 ${d.target.x},${d.target.y}`;
+            });
+
+            node.attr("transform", d => `translate(${d.x},${d.y})`);
+            nodeLabels.attr("transform", d => `translate(${d.x},${d.y})`);
+        });
+
+
+
+        // Drag functions
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+        // Node interaction handlers
+        function handleNodeClick(event, d) {
+            selectNode(d.name);
+        }
+
+        function handleTimelineNodeClick(event, d) {
+            selectNode(d.name);
+        }
+
+        function selectNode(nodeName) {
+            selectedNode = nodeName;
+            
+            // Update network nodes opacity
+            node.style("opacity", d => d.name === nodeName ? 1 : 0.3);
+            nodeLabels.style("opacity", d => d.name === nodeName ? 1 : 0.3);
+            link.style("opacity", d => 
+                d.source.name === nodeName || d.target.name === nodeName ? 1 : 0.1);
+
+            // Update timeline nodes opacity
+            timelineNodeElements.style("opacity", d => d.name === nodeName ? 1 : 0.3);
+            timelineNodeLabels.style("opacity", d => d.name === nodeName ? 1 : 0.3);
+            
+            // Show corresponding timeline arc
+            timelineArcElements.style("opacity", d => d.name === nodeName ? 1 : 0);
+        }
+
+        // Tooltip functions
+        function showTooltip(event, d) {
+            const tooltipContent = d.nodeType ? 
+                `${d.name}, ${d.type}, ${d.birth}, ${d.death}, ${d["main discipline"]}<br><a href="${d.link}" target="_blank">More info</a>` :
+                `${d.name}, ${d.type}, ${d.birth}, ${d.death}, ${d["main discipline"]}<br><a href="${d.link}" target="_blank">More info</a>`;
+            
+            tooltip.style("opacity", 1)
+                .html(tooltipContent)
+                .style("left", (event.pageX + 10) + "px")
+                .style("top", (event.pageY - 10) + "px");
+        }
+
+        function hideTooltip() {
+            tooltip.style("opacity", 0);
+        }
+
+        // Resize handler
+        window.addEventListener('resize', () => {
+            const newNetworkSize = updateNetworkSize();
+            networkWidth = newNetworkSize.width;
+            networkHeight = newNetworkSize.height;
+            
+            const newTimelineSize = updateTimelineSize();
+            timelineWidth = newTimelineSize.width;
+            timelineHeight = newTimelineSize.height;
+            
+            simulation.force("center", d3.forceCenter(networkWidth / 2, networkHeight / 2));
+            simulation.alpha(1).restart();
+            
+            // Update timeline scale and elements
+            timelineScale.range([50, timelineWidth - 50]);
+            
+            // Update timeline elements positions
+            timelineGroup.select(".timeline-axis")
+                .attr("x2", timelineWidth - 50);
+                
+            timelineGroup.selectAll(".timeline-tick")
+                .attr("x1", d => timelineScale(d))
+                .attr("x2", d => timelineScale(d));
+                
+            timelineGroup.selectAll(".timeline-label")
+                .attr("x", d => timelineScale(d));
+                
+            timelineArcElements.attr("d", d => {
+                const x1 = timelineScale(d.startYear);
+                const x2 = timelineScale(d.endYear);
+                const y = timelineHeight / 2 - 40;
+                const midX = (x1 + x2) / 2;
+                const controlY = y - 20;
+                return `M ${x1} ${y} Q ${midX} ${controlY} ${x2} ${y}`;
+            });
+            
+            timelineNodeElements.each(function(d) {
+                if (d.nodeType === "birth") {
+                    d3.select(this).attr("cx", timelineScale(d.year));
+                } else {
+                    d3.select(this).attr("x", timelineScale(d.year) - 6);
+                }
+            });
+            
+            timelineNodeLabels.attr("x", d => timelineScale(d.year));
+        });
+
+        // Initial render
+        simulation.alpha(1).restart();
+    </script>
+</body>
+</html>
