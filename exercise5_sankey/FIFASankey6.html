@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sankey Diagram</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12.3/dist/d3-sankey.min.js"></script>
+    <style>
+        .node rect {
+            cursor: move;
+            fill-opacity: 0.9;
+            shape-rendering: crispEdges;
+        }
+        .node text {
+            pointer-events: none;
+            font-size: 12px;
+        }
+        .link {
+            fill: none;
+            stroke-opacity: 0.2;
+        }
+        .link:hover {
+            stroke-opacity: 0.5;
+        }
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            padding: 8px;
+            background: lightgray;
+            border: 1px solid black;
+            border-radius: 4px;
+            pointer-events: none;
+            visibility: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div class="tooltip" id="tooltip"></div>
+    <svg id="sankey" width="960" height="500"></svg>
+    <script>
+        const data = {
+            nodes: [  
+		     
+		     { id:  "semifinal" , color: "purple" },
+		     { id: "final", color: "purple"}, { id: "quarterfinal", color: "purple" }, 
+		     { id: "final 16", color: "purple" }, 
+		     { id: "final 32" , color: "purple"},
+                     { id: "AFC", color: "#334477" },
+		     { id: "CONMEBOL", color: "#334477" }, 
+		     { id: "UEFA" , color: "#334477"},
+		     { id: "CAF",  color: "#334477"},
+		     { id: "OFC" , color: "#334477"}, 
+		     { id: "CONCACAF" ,color: "#334477" } 
+            ],
+            links: [
+                { source: "CONMEBOL", target: "final", value: 1 },
+		{ source: "UEFA", target: "final", value: 1 },
+                { source: "CONMEBOL", target: "semifinal", value: 1 },
+ 		{ source: "UEFA", target: "semifinal", value: 2 },
+                { source: "CONMEBOL", target: "quarterfinal", value: 2 },
+                { source: "CONMEBOL", target: "final 16", value: 2 },
+                { source: "CONMEBOL", target: "final 32", value: 4 },
+                { source: "UEFA", target: "quarterfinal", value: 5 },
+                { source: "UEFA", target: "final 16", value: 8 },
+                { source: "UEFA", target: "final 32", value: 13 },
+		{ source: "CAF", target: "final", value: 0 },
+                { source: "CAF", target: "semifinal", value: 1 },
+                { source: "CAF", target: "quarterfinal", value: 1 },
+                { source: "CAF", target: "final 16", value: 2 },
+                { source: "CAF", target: "final 32", value: 5 },
+		{ source: "AFC", target: "final", value: 0 },
+                { source: "AFC", target: "semifinal", value: 0 },
+                { source: "AFC", target: "quarterfinal", value: 0 },
+                { source: "AFC", target: "final 16", value: 3 },
+                { source: "AFC", target: "final 32", value: 6 },
+		{ source: "CONCACAF", target: "final", value: 0 },
+                { source: "CONCACAF", target: "semifinal", value: 0 },
+                { source: "CONCACAF", target: "quarterfinal", value: 0 },
+                { source: "CONCACAF", target: "final 16", value: 1 },
+                { source: "CONCACAF", target: "final 32", value: 4 }
+            ]
+        };
+
+    const width = 600;
+    const height = 400;
+
+    const svg = d3.select("#sankey")
+      .attr("viewBox", [0, 0, width, height])
+      .style("font", "10px sans-serif");
+
+    const sankey = d3.sankey()
+      .nodeId(d => d.id)
+      .nodeWidth(20)
+      .nodePadding(10)
+      .extent([[1, 1], [width - 1, height - 6]]);
+
+    const { nodes, links } = sankey(data);
+
+    svg.append("g")
+      .selectAll("rect")
+      .data(nodes)
+      .join("rect")
+      .attr("x", d => d.x0)
+      .attr("y", d => d.y0)
+      .attr("height", d => d.y1 - d.y0)
+      .attr("width", d => d.x1 - d.x0)
+	.attr("fill", d => d.color)
+      //.attr("fill", d => d3.schemeCategory10[d.index % 50])
+
+
+      .append("title")
+      .text(d => `${d.id}\n${d.value}`);
+
+    svg.append("g")
+      .attr("fill", "none")
+      .selectAll("path")
+      .data(links)
+      .join("path")
+      .attr("d", d3.sankeyLinkHorizontal())
+      .attr("stroke", d => d3.schemeCategory10[d.source.index % 10])
+      .attr("stroke-width", d => Math.max(1, d.width))
+      .style("mix-blend-mode", "multiply")
+      .append("title")
+      .text(d => `${d.source.id} → ${d.target.id}\n${d.value}`);
+
+    svg.append("g")
+      .style("font", "10px sans-serif")
+      .selectAll("text")
+      .data(nodes)
+      .join("text")
+      .attr("x", d => (d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6))
+      .attr("y", d => (d.y1 + d.y0) / 2)
+      .attr("dy", "0.35em")
+      .attr("text-anchor", d => (d.x0 < width / 2 ? "start" : "end"))
+      .text(d => d.id);
+    </script>
+</body>
+</html>
