@@ -33,6 +33,7 @@ https://observablehq.com/@d3/tree-of-life <br>
 Reference for visual styling: http://www.d3noob.org/2014/02/styles-in-d3js.html<br>
 A useful conversor from csv to json: https://www.geeksforgeeks.org/csv-to-json-converter/<br>
 also for maps: https://www.d3indepth.com/geographic/<br>
+https://d3js.org/d3-geo<br>
 <br>
 Folders:<br/> Exercise 1 is for basic dasboard /<br> Exercise 2 is for network graphics / <br>Exercise 3 is for radial charts /<br> Exercise 4 is for arc diagrams/ <br>Exercise 5 is for Sankey diagrams <br>/Exercise 6 is for hierarchical trees
 
