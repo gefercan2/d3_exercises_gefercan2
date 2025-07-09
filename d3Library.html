@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3.js Chart Elements and Templates</title>
+
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Base font for the document */
+        :root {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Styling for code blocks to make them distinct and readable */
+        .code-block {
+            background-color: #1f2937; /* Dark gray background */
+            color: #f9fafb; /* Light text color */
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto; /* Enable horizontal scrolling for long lines */
+            font-family: monospace; /* Monospaced font for code */
+            font-size: 0.875rem; /* text-sm */
+        }
+        .code-block pre {
+            margin: 0;
+            white-space: pre-wrap; /* Wrap long lines of code */
+            word-break: break-all; /* Break words if they are too long */
+        }
+        /* Container for visual previews, adding a consistent look */
+        .preview-container {
+            border: 1px solid #e5e7eb; /* Light gray border */
+            border-radius: 0.5rem;
+            overflow: hidden; /* Hide anything overflowing the rounded corners */
+            background-color: #f9fafb; /* Light background for previews */
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06); /* Subtle shadow */
+            position: relative; /* Needed for absolute positioning of UI overlays */
+            padding: 1rem; /* Padding inside preview for charts */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        /* Specific styling for SVG elements used by D3.js */
+        .chart-svg {
+            display: block;
+            width: 100%;
+            height: 300px; /* Fixed height for charts */
+            background-color: #ffffff; /* White background for the chart area */
+            border-radius: 0.5rem;
+        }
+        /* Basic styling for D3 elements within charts */
+        .bar { fill: #4f46e5; } /* Indigo-600 */
+        .bar:hover { fill: #4338ca; } /* Darker indigo on hover */
+        .line-path {
+            fill: none;
+            stroke: #ef4444; /* Red-500 */
+            stroke-width: 2px;
+        }
+        .dot { fill: #22c55e; } /* Green-500 */
+        .axis path, .axis line {
+            fill: none;
+            stroke: #d1d5db; /* Gray-300 */
+            shape-rendering: crispEdges;
+        }
+        .axis text {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.75rem; /* text-xs */
+            fill: #6b7280; /* Gray-500 */
+        }
+        .pie-slice {
+            stroke: white;
+            stroke-width: 1px;
+        }
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: auto;
+            height: auto;
+            padding: 8px;
+            font: 12px sans-serif;
+            background: lightsteelblue;
+            border: 0px;
+            border-radius: 8px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            color: black;
+        }
+    </style>
+
+    <!-- D3.js CDN: Core library for data-driven documents -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 p-4 sm:p-6 md:p-8">
+
+    <!-- Main Container: Centers content and applies basic styling -->
+    <div class="max-w-6xl mx-auto bg-white shadow-lg rounded-xl p-6 sm:p-8 md:p-10">
+
+        <!-- Main Title of the Document -->
+        <h1 class="text-3xl sm:text-4xl font-bold text-center mb-8 text-indigo-700">
+            D3.js Chart Elements and Templates
+        </h1>
+
+        <!-- Section for D3.js Examples -->
+        <section class="mb-12">
+            <h2 class="text-2xl sm:text-3xl font-semibold mb-6 text-indigo-600 border-b pb-3">
+                D3.js (Data-Driven Documents)
+            </h2>
+
+            <p class="mb-8 text-gray-700">
+                D3.js is a powerful JavaScript library for manipulating documents based on data.
+                It helps you bring data to life using HTML, SVG, and CSS. D3's emphasis on web
+                standards gives you the full capabilities of modern browsers without being tied
+                to a proprietary framework, enabling highly customized and interactive data visualizations.
+            </p>
+
+            <!-- Grid layout for D3.js examples -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <!-- D3.js Bar Chart -->
+                <div class="p-4 bg-gray-50 rounded-lg shadow-sm flex flex-col">
+                    <h3 class="text-xl font-medium mb-4">Bar Chart</h3>
+                    <div class="mb-4">
+                        <p class="font-semibold mb-2">Preview:</p>
+                        <div class="preview-container">
+                            <svg id="bar-chart-preview" class="chart-svg"></svg>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="font-semibold mb-2">Code:</p>
+                        <div class="code-block">
+<pre><code>&lt;!-- SVG element for the chart --&gt;
+&lt;svg id="myBarChart" class="chart-svg"&gt;&lt;/svg&gt;
+
+&lt;script&gt;
+    // Sample data for the bar chart
+    const barData = [
+        { category: 'A', value: 30 },
+        { category: 'B', value: 80 },
+        { category: 'C', value: 45 },
+        { category: 'D', value: 60 },
+        { category: 'E', value: 20 }
+    ];
+
+    // Set up dimensions and margins for the chart
+    const margin = { top: 20, right: 30, bottom: 40, left: 40 };
+    // Note: When copying this code, ensure 'myBarChart' exists in your HTML
+    const svgElement = document.getElementById('myBarChart');
+    const svgWidth = svgElement ? svgElement.clientWidth : 600; // Fallback for demo
+    const svgHeight = svgElement ? svgElement.clientHeight : 300; // Fallback for demo
+    const width = svgWidth - margin.left - margin.right;
+    const height = svgHeight - margin.top - margin.bottom;
+
+    // Append SVG object to the body of the page
+    const svgBar = d3.select("#myBarChart")
+        .attr("width", svgWidth)
+        .attr("height", svgHeight)
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+    // X-axis scale (Band scale for categorical data)
+    const xScaleBar = d3.scaleBand()
+        .domain(barData.map(d => d.category)) // Domain is the categories
+        .range([0, width]) // Map to the width of the chart area
+        .padding(0.1); // Padding between bars
+
+    // Y-axis scale (Linear scale for quantitative data)
+    const yScaleBar = d3.scaleLinear()
+        .domain([0, d3.max(barData, d => d.value)]) // Domain from 0 to max value
+        .range([height, 0]); // Map to the height (inverted for SVG coordinates)
+
+    // Add X-axis to the SVG
+    svgBar.append("g")
+        .attr("transform", `translate(0,${height})`) // Position at the bottom
+        .call(d3.axisBottom(xScaleBar)) // Create bottom axis
+        .attr("class", "axis"); // Add class for styling
+
+    // Add Y-axis to the SVG
+    svgBar.append("g")
+        .call(d3.axisLeft(yScaleBar)) // Create left axis
+        .attr("class", "axis"); // Add class for styling
+
+    // Create the bars
+    svgBar.selectAll(".bar")
+        .data(barData) // Bind data to elements
+        .enter() // For each new data point
+        .append("rect") // Append a rectangle
+        .attr("class", "bar") // Add class for styling
+        .attr("x", d => xScaleBar(d.category)) // X position of the bar
+        .attr("y", d => yScaleBar(d.value)) // Y position (top of the bar)
+        .attr("width", xScaleBar.bandwidth()) // Width of the bar
+        .attr("height", d => height - yScaleBar(d.value)); // Height of the bar
+
+    // Handle window resize for responsiveness
+    // This resize logic would typically be outside the &lt;script&gt; tag if it's copied
+    // and combined with other charts. For a standalone chart, it's fine here.
+    window.addEventListener('resize', () => {
+        const newSvgWidth = svgElement ? svgElement.clientWidth : 600;
+        const newSvgHeight = svgElement ? svgElement.clientHeight : 300;
+        const newWidth = newSvgWidth - margin.left - margin.right;
+        const newHeight = newSvgHeight - margin.top - margin.bottom;
+
+        d3.select("#myBarChart")
+            .attr("width", newSvgWidth)
+            .attr("height", newSvgHeight);
+
+        xScaleBar.range([0, newWidth]);
+        yScaleBar.range([newHeight, 0]);
+
+        svgBar.select(".axis").attr("transform", `translate(0,${newHeight})`).call(d3.axisBottom(xScaleBar));
+        svgBar.select(".axis").call(d3.axisLeft(yScaleBar));
+
+        svgBar.selectAll(".bar")
+            .attr("x", d => xScaleBar(d.category))
+            .attr("y", d => yScaleBar(d.value))
+            .attr("width", xScaleBar.bandwidth())
+            .attr("height", d => newHeight - yScaleBar(d.value));
+    });
+&lt;/script&gt;</code></pre>
+                        </div>
+                    </div>
+                    <p class="mt-4 text-gray-700">
+                        A bar chart is ideal for comparing quantities across different categories.
+                        This example demonstrates how to use D3's `scaleBand` for the x-axis (categories)
+                        and `scaleLinear` for the y-axis (values). It includes basic axes, bars,
+                        and responsiveness to window resizing.
+                    </p>
+                </div>
+
+                <!-- D3.js Line Chart -->
+                <div class="p-4 bg-gray-50 rounded-lg shadow-sm flex flex-col">
+                    <h3 class="text-xl font-medium mb-4">Line Chart</h3>
+                    <div class="mb-4">
+                        <p class="font-semibold mb-2">Preview:</p>
+                        <div class="preview-container">
+                            <svg id="line-chart-preview" class="chart-svg"></svg>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="font-semibold mb-2">Code:</p>
+                        <div class="code-block">
+<pre><code>&lt;!-- SVG element for the chart --&gt;
+&lt;svg id="myLineChart" class="chart-svg"&gt;&lt;/svg&gt;
+
+&lt;script&gt;
+    // Sample data for the line chart (time series)
+    const lineData = [
+        { date: new Date("2023-01-01"), value: 10 },
+        { date: new Date("2023-02-01"), value: 40 },
+        { date: new Date("2023-03-01"), value: 25 },
+        { date: new Date("2023-04-01"), value: 70 },
+        { date: new Date("2023-05-01"), value: 55 },
+        { date: new Date("2023-06-01"), value: 80 }
+    ];
+
+    // Set up dimensions and margins
+    const marginLine = { top: 20, right: 30, bottom: 40, left: 40 };
+    // Note: When copying this code, ensure 'myLineChart' exists in your HTML
+    const svgElementLine = document.getElementById('myLineChart');
+    const svgWidthLine = svgElementLine ? svgElementLine.clientWidth : 600;
+    const svgHeightLine = svgElementLine ? svgElementLine.clientHeight : 300;
+    const widthLine = svgWidthLine - marginLine.left - marginLine.right;
+    const heightLine = svgHeightLine - marginLine.top - marginLine.bottom;
+
+    // Append SVG object
+    const svgLine = d3.select("#myLineChart")
+        .attr("width", svgWidthLine)
+        .attr("height", svgHeightLine)
+        .append("g")
+        .attr("transform", `translate(${marginLine.left},${marginLine.top})`);
+
+    // X-axis scale (Time scale for dates)
+    const xScaleLine = d3.scaleTime()
+        .domain(d3.extent(lineData, d => d.date)) // Domain from min to max date
+        .range([0, widthLine]); // Map to width
+
+    // Y-axis scale (Linear scale for values)
+    const yScaleLine = d3.scaleLinear()
+        .domain([0, d3.max(lineData, d => d.value)]) // Domain from 0 to max value
+        .range([heightLine, 0]); // Map to height (inverted)
+
+    // Add X-axis
+    svgLine.append("g")
+        .attr("transform", `translate(0,${heightLine})`)
+        .call(d3.axisBottom(xScaleLine))
+        .attr("class", "axis");
+
+    // Add Y-axis
+    svgLine.append("g")
+        .call(d3.axisLeft(yScaleLine))
+        .attr("class", "axis");
+
+    // Define the line generator
+    const line = d3.line()
+        .x(d => xScaleLine(d.date)) // X coordinate based on date
+        .y(d => yScaleLine(d.value)); // Y coordinate based on value
+
+    // Add the line path
+    svgLine.append("path")
+        .datum(lineData) // Bind the entire data array
+        .attr("class", "line-path") // Add class for styling
+        .attr("d", line); // Generate the path data
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+        const newSvgWidthLine = svgElementLine ? svgElementLine.clientWidth : 600;
+        const newSvgHeightLine = svgElementLine ? svgElementLine.clientHeight : 300;
+        const newWidthLine = newSvgWidthLine - marginLine.left - marginLine.right;
+        const newHeightLine = newSvgHeightLine - marginLine.top - marginLine.bottom;
+
+        d3.select("#myLineChart")
+            .attr("width", newSvgWidthLine)
+            .attr("height", newSvgHeightLine);
+
+        xScaleLine.range([0, newWidthLine]);
+        yScaleLine.range([newHeightLine, 0]);
+
+        svgLine.select(".axis").attr("transform", `translate(0,${newHeightLine})`).call(d3.axisBottom(xScaleLine));
+        svgLine.select(".axis").call(d3.axisLeft(yScaleLine));
+
+        svgLine.select(".line-path").attr("d", line);
+    });
+&lt;/script&gt;</code></pre>
+                        </div>
+                    </div>
+                    <p class="mt-4 text-gray-700">
+                        Line charts are excellent for showing trends over continuous data,
+                        typically time. This example uses `scaleTime` for the x-axis (dates)
+                        and `scaleLinear` for the y-axis (values). The `d3.line()` generator
+                        is used to create the path data for the line.
+                    </p>
+                </div>
+
+                <!-- D3.js Scatter Plot -->
+                <div class="p-4 bg-gray-50 rounded-lg shadow-sm flex flex-col">
+                    <h3 class="text-xl font-medium mb-4">Scatter Plot</h3>
+                    <div class="mb-4">
+                        <p class="font-semibold mb-2">Preview:</p>
+                        <div class="preview-container">
+                            <svg id="scatter-plot-preview" class="chart-svg"></svg>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="font-semibold mb-2">Code:</p>
+                        <div class="code-block">
+<pre><code>&lt;!-- SVG element for the chart --&gt;
+&lt;svg id="myScatterPlot" class="chart-svg"&gt;&lt;/svg&gt;
+
+&lt;script&gt;
+    // Sample data for the scatter plot
+    const scatterData = [
+        { x: 10, y: 20 }, { x: 40, y: 90 }, { x: 80, y: 50 },
+        { x: 25, y: 70 }, { x: 60, y: 30 }, { x: 90, y: 10 },
+        { x: 35, y: 85 }, { x: 70, y: 40 }, { x: 50, y: 65 }
+    ];
+
+    // Set up dimensions and margins
+    const marginScatter = { top: 20, right: 30, bottom: 40, left: 40 };
+    // Note: When copying this code, ensure 'myScatterPlot' exists in your HTML
+    const svgElementScatter = document.getElementById('myScatterPlot');
+    const svgWidthScatter = svgElementScatter ? svgElementScatter.clientWidth : 600;
+    const svgHeightScatter = svgElementScatter ? svgElementScatter.clientHeight : 300;
+    const widthScatter = svgWidthScatter - marginScatter.left - marginScatter.right;
+    const heightScatter = svgHeightScatter - marginScatter.top - marginScatter.bottom;
+
+    // Append SVG object
+    const svgScatter = d3.select("#myScatterPlot")
+        .attr("width", svgWidthScatter)
+        .attr("height", svgHeightScatter)
+        .append("g")
+        .attr("transform", `translate(${marginScatter.left},${marginScatter.top})`);
+
+    // X-axis scale (Linear scale for x values)
+    const xScaleScatter = d3.scaleLinear()
+        .domain([0, d3.max(scatterData, d => d.x)])
+        .range([0, widthScatter]);
+
+    // Y-axis scale (Linear scale for y values)
+    const yScaleScatter = d3.scaleLinear()
+        .domain([0, d3.max(scatterData, d => d.y)])
+        .range([heightScatter, 0]);
+
+    // Add X-axis
+    svgScatter.append("g")
+        .attr("transform", `translate(0,${heightScatter})`)
+        .call(d3.axisBottom(xScaleScatter))
+        .attr("class", "axis");
+
+    // Add Y-axis
+    svgScatter.append("g")
+        .call(d3.axisLeft(yScaleScatter))
+        .attr("class", "axis");
+
+    // Add dots
+    svgScatter.selectAll(".dot")
+        .data(scatterData)
+        .enter()
+        .append("circle")
+        .attr("class", "dot")
+        .attr("cx", d => xScaleScatter(d.x)) // Center x of circle
+        .attr("cy", d => yScaleScatter(d.y)) // Center y of circle
+        .attr("r", 5); // Radius of the circle
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+        const newSvgWidthScatter = svgElementScatter ? svgElementScatter.clientWidth : 600;
+        const newSvgHeightScatter = svgElementScatter ? svgElementScatter.clientHeight : 300;
+        const newWidthScatter = newSvgWidthScatter - marginScatter.left - marginScatter.right;
+        const newHeightScatter = newSvgHeightScatter - marginScatter.top - marginScatter.bottom;
+
+        d3.select("#myScatterPlot")
+            .attr("width", newSvgWidthScatter)
+            .attr("height", newSvgHeightScatter);
+
+        xScaleScatter.range([0, newWidthScatter]);
+        yScaleScatter.range([newHeightScatter, 0]);
+
+        svgScatter.select(".axis").attr("transform", `translate(0,${newHeightScatter})`).call(d3.axisBottom(xScaleScatter));
+        svgScatter.select(".axis").call(d3.axisLeft(yScaleScatter));
+
+        svgScatter.selectAll(".dot")
+            .attr("cx", d => xScaleScatter(d.x))
+            .attr("cy", d => yScaleScatter(d.y));
+    });
+&lt;/script&gt;</code></pre>
+                        </div>
+                    </div>
+                    <p class="mt-4 text-gray-700">
+                        A scatter plot displays the relationship between two quantitative variables.
+                        Each data point is represented by a dot, positioned according to its x and y values.
+                        This example uses `scaleLinear` for both axes and draws circles for each data point.
+                    </p>
+                </div>
+
+                <!-- D3.js Pie Chart -->
+                <div class="p-4 bg-gray-50 rounded-lg shadow-sm flex flex-col">
+                    <h3 class="text-xl font-medium mb-4">Pie Chart</h3>
+                    <div class="mb-4">
+                        <p class="font-semibold mb-2">Preview:</p>
+                        <div class="preview-container">
+                            <svg id="pie-chart-preview" class="chart-svg"></svg>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="font-semibold mb-2">Code:</p>
+                        <div class="code-block">
+<pre><code>&lt;!-- SVG element for the chart --&gt;
+&lt;svg id="myPieChart" class="chart-svg"&gt;&lt;/svg&gt;
+
+&lt;script&gt;
+    // Sample data for the pie chart
+    const pieData = [
+        { category: 'Category A', value: 30 },
+        { category: 'Category B', value: 20 },
+        { category: 'Category C', value: 50 },
+        { category: 'Category D', value: 15 }
+    ];
+
+    // Set up dimensions and radius for the pie chart
+    // Note: When copying this code, ensure 'myPieChart' exists in your HTML
+    const svgElementPie = document.getElementById('myPieChart');
+    const svgWidthPie = svgElementPie ? svgElementPie.clientWidth : 600;
+    const svgHeightPie = svgElementPie ? svgElementPie.clientHeight : 300;
+    const radius = Math.min(svgWidthPie, svgHeightPie) / 2 - 20; // Calculate radius, leaving some margin
+
+    // Append SVG object and move its origin to the center for pie chart
+    const svgPie = d3.select("#myPieChart")
+        .attr("width", svgWidthPie)
+        .attr("height", svgHeightPie)
+        .append("g")
+        .attr("transform", `translate(${svgWidthPie / 2},${svgHeightPie / 2})`); // Center the group
+
+    // Define color scale
+    const color = d3.scaleOrdinal()
+        .domain(pieData.map(d => d.category))
+        .range(d3.schemeCategory10); // D3's built-in color scheme
+
+    // Compute the position of each slice
+    const pie = d3.pie()
+        .value(d => d.value); // Tell pie generator to use 'value' for slice size
+
+    // Arc generator for drawing the slices
+    const arc = d3.arc()
+        .innerRadius(0) // Inner radius for donut chart (0 for pie chart)
+        .outerRadius(radius); // Outer radius of the pie slices
+
+    // Add the slices to the SVG
+    svgPie.selectAll('slices')
+        .data(pie(pieData)) // Bind pie-generated data
+        .enter()
+        .append('path')
+        .attr('d', arc) // Use arc generator to draw path
+        .attr('fill', d => color(d.data.category)) // Fill with color based on category
+        .attr("class", "pie-slice") // Add class for styling
+        .each(function(d) { this._current = d; }); // Store initial data for transitions
+
+    // Add labels to the slices
+    const outerArc = d3.arc()
+        .innerRadius(radius * 1.1)
+        .outerRadius(radius * 1.1);
+
+    svgPie.selectAll('labels')
+        .data(pie(pieData))
+        .enter()
+        .append('text')
+        .text(d => `${d.data.category} (${d.data.value})`) // Text for label
+        .attr('transform', d => `translate(${outerArc.centroid(d)})`) // Position label
+        .style('text-anchor', d => (d.endAngle + d.startAngle) / 2 > Math.PI ? 'end' : 'start') // Align text
+        .style('font-size', '0.75rem')
+        .style('fill', '#374151'); // Gray-700
+
+    // Handle window resize
+    window.addEventListener('resize', () => {
+        const newSvgWidthPie = svgElementPie ? svgElementPie.clientWidth : 600;
+        const newSvgHeightPie = svgElementPie ? svgElementPie.clientHeight : 300;
+        const newRadius = Math.min(newSvgWidthPie, newSvgHeightPie) / 2 - 20;
+
+        d3.select("#myPieChart")
+            .attr("width", newSvgWidthPie)
+            .attr("height", newSvgHeightPie);
+
+        svgPie.attr("transform", `translate(${newSvgWidthPie / 2},${newSvgHeightPie / 2})`);
+
+        // Update arc and outerArc with new radius
+        arc.outerRadius(newRadius);
+        outerArc.innerRadius(newRadius * 1.1).outerRadius(newRadius * 1.1);
+
+        // Transition slices to new positions/sizes
+        svgPie.selectAll(".pie-slice").transition().duration(750).attrTween("d", function(d) {
+            const interpolate = d3.interpolate(this._current, d);
+            this._current = interpolate(0);
+            return function(t) {
+                return arc(interpolate(t));
+            };
+        });
+
+        // Update labels
+        svgPie.selectAll("text")
+            .attr('transform', d => `translate(${outerArc.centroid(d)})`)
+            .style('text-anchor', d => (d.endAngle + d.startAngle) / 2 > Math.PI ? 'end' : 'start');
+    });
+&lt;/script&gt;</code></pre>
+                        </div>
+                    </div>
+                    <p class="mt-4 text-gray-700">
+                        Pie charts are used to show the proportion of categories within a whole.
+                        This example uses `d3.pie()` to calculate the angles for each slice and
+                        `d3.arc()` to draw the SVG paths. A `d3.scaleOrdinal` is used for coloring
+                        the slices, and labels are added for clarity. It also includes basic responsiveness.
+                    </p>
+                </div>
+
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Main JavaScript block for chart rendering -->
+    <script>
+        // Function to draw the Bar Chart
+        function drawBarChart() {
+            // Sample data for the bar chart
+            const barData = [
+                { category: 'A', value: 30 },
+                { category: 'B', value: 80 },
+                { category: 'C', value: 45 },
+                { category: 'D', value: 60 },
+                { category: 'E', value: 20 }
+            ];
+
+            // Set up dimensions and margins for the chart
+            const margin = { top: 20, right: 30, bottom: 40, left: 40 };
+            const svgElement = document.getElementById('bar-chart-preview');
+            if (!svgElement) return; // Exit if SVG element not found
+
+            const svgWidth = svgElement.clientWidth;
+            const svgHeight = svgElement.clientHeight;
+            const width = svgWidth - margin.left - margin.right;
+            const height = svgHeight - margin.top - margin.bottom;
+
+            // Clear previous chart content (important for redraw on resize)
+            d3.select(svgElement).selectAll("*").remove();
+
+            // Append SVG object to the body of the page
+            const svgBar = d3.select(svgElement)
+                .attr("width", svgWidth)
+                .attr("height", svgHeight)
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // X-axis scale (Band scale for categorical data)
+            const xScaleBar = d3.scaleBand()
+                .domain(barData.map(d => d.category)) // Domain is the categories
+                .range([0, width]) // Map to the width of the chart area
+                .padding(0.1); // Padding between bars
+
+            // Y-axis scale (Linear scale for quantitative data)
+            const yScaleBar = d3.scaleLinear()
+                .domain([0, d3.max(barData, d => d.value)]) // Domain from 0 to max value
+                .range([height, 0]); // Map to the height (inverted for SVG coordinates)
+
+            // Add X-axis to the SVG
+            svgBar.append("g")
+                .attr("transform", `translate(0,${height})`) // Position at the bottom
+                .call(d3.axisBottom(xScaleBar)) // Create bottom axis
+                .attr("class", "axis"); // Add class for styling
+
+            // Add Y-axis to the SVG
+            svgBar.append("g")
+                .call(d3.axisLeft(yScaleBar)) // Create left axis
+                .attr("class", "axis"); // Add class for styling
+
+            // Create the bars
+            svgBar.selectAll(".bar")
+                .data(barData) // Bind data to elements
+                .enter() // For each new data point
+                .append("rect") // Append a rectangle
+                .attr("class", "bar") // Add class for styling
+                .attr("x", d => xScaleBar(d.category)) // X position of the bar
+                .attr("y", d => yScaleBar(d.value)) // Y position (top of the bar)
+                .attr("width", xScaleBar.bandwidth()) // Width of the bar
+                .attr("height", d => height - yScaleBar(d.value)); // Height of the bar
+        }
+
+        // Function to draw the Line Chart
+        function drawLineChart() {
+            // Sample data for the line chart (time series)
+            const lineData = [
+                { date: new Date("2023-01-01"), value: 10 },
+                { date: new Date("2023-02-01"), value: 40 },
+                { date: new Date("2023-03-01"), value: 25 },
+                { date: new Date("2023-04-01"), value: 70 },
+                { date: new Date("2023-05-01"), value: 55 },
+                { date: new Date("2023-06-01"), value: 80 }
+            ];
+
+            // Set up dimensions and margins
+            const marginLine = { top: 20, right: 30, bottom: 40, left: 40 };
+            const svgElementLine = document.getElementById('line-chart-preview');
+            if (!svgElementLine) return; // Exit if SVG element not found
+
+            const svgWidthLine = svgElementLine.clientWidth;
+            const svgHeightLine = svgElementLine.clientHeight;
+            const widthLine = svgWidthLine - marginLine.left - marginLine.right;
+            const heightLine = svgHeightLine - marginLine.top - marginLine.bottom;
+
+            // Clear previous chart content
+            d3.select(svgElementLine).selectAll("*").remove();
+
+            // Append SVG object
+            const svgLine = d3.select(svgElementLine)
+                .attr("width", svgWidthLine)
+                .attr("height", svgHeightLine)
+                .append("g")
+                .attr("transform", `translate(${marginLine.left},${marginLine.top})`);
+
+            // X-axis scale (Time scale for dates)
+            const xScaleLine = d3.scaleTime()
+                .domain(d3.extent(lineData, d => d.date)) // Domain from min to max date
+                .range([0, widthLine]); // Map to width
+
+            // Y-axis scale (Linear scale for values)
+            const yScaleLine = d3.scaleLinear()
+                .domain([0, d3.max(lineData, d => d.value)]) // Domain from 0 to max value
+                .range([heightLine, 0]); // Map to height (inverted)
+
+            // Add X-axis
+            svgLine.append("g")
+                .attr("transform", `translate(0,${heightLine})`)
+                .call(d3.axisBottom(xScaleLine))
+                .attr("class", "axis");
+
+            // Add Y-axis
+            svgLine.append("g")
+                .call(d3.axisLeft(yScaleLine))
+                .attr("class", "axis");
+
+            // Define the line generator
+            const line = d3.line()
+                .x(d => xScaleLine(d.date)) // X coordinate based on date
+                .y(d => yScaleLine(d.value)); // Y coordinate based on value
+
+            // Add the line path
+            svgLine.append("path")
+                .datum(lineData) // Bind the entire data array
+                .attr("class", "line-path") // Add class for styling
+                .attr("d", line); // Generate the path data
+        }
+
+        // Function to draw the Scatter Plot
+        function drawScatterPlot() {
+            // Sample data for the scatter plot
+            const scatterData = [
+                { x: 10, y: 20 }, { x: 40, y: 90 }, { x: 80, y: 50 },
+                { x: 25, y: 70 }, { x: 60, y: 30 }, { x: 90, y: 10 },
+                { x: 35, y: 85 }, { x: 70, y: 40 }, { x: 50, y: 65 }
+            ];
+
+            // Set up dimensions and margins
+            const marginScatter = { top: 20, right: 30, bottom: 40, left: 40 };
+            const svgElementScatter = document.getElementById('scatter-plot-preview');
+            if (!svgElementScatter) return; // Exit if SVG element not found
+
+            const svgWidthScatter = svgElementScatter.clientWidth;
+            const svgHeightScatter = svgElementScatter.clientHeight;
+            const widthScatter = svgWidthScatter - marginScatter.left - marginScatter.right;
+            const heightScatter = svgHeightScatter - marginScatter.top - marginScatter.bottom;
+
+            // Clear previous chart content
+            d3.select(svgElementScatter).selectAll("*").remove();
+
+            // Append SVG object
+            const svgScatter = d3.select(svgElementScatter)
+                .attr("width", svgWidthScatter)
+                .attr("height", svgHeightScatter)
+                .append("g")
+                .attr("transform", `translate(${marginScatter.left},${marginScatter.top})`);
+
+            // X-axis scale (Linear scale for x values)
+            const xScaleScatter = d3.scaleLinear()
+                .domain([0, d3.max(scatterData, d => d.x)])
+                .range([0, widthScatter]);
+
+            // Y-axis scale (Linear scale for y values)
+            const yScaleScatter = d3.scaleLinear()
+                .domain([0, d3.max(scatterData, d => d.y)])
+                .range([heightScatter, 0]);
+
+            // Add X-axis
+            svgScatter.append("g")
+                .attr("transform", `translate(0,${heightScatter})`)
+                .call(d3.axisBottom(xScaleScatter))
+                .attr("class", "axis");
+
+            // Add Y-axis
+            svgScatter.append("g")
+                .call(d3.axisLeft(yScaleScatter))
+                .attr("class", "axis");
+
+            // Add dots
+            svgScatter.selectAll(".dot")
+                .data(scatterData)
+                .enter()
+                .append("circle")
+                .attr("class", "dot")
+                .attr("cx", d => xScaleScatter(d.x)) // Center x of circle
+                .attr("cy", d => yScaleScatter(d.y)) // Center y of circle
+                .attr("r", 5); // Radius of the circle
+        }
+
+        // Function to draw the Pie Chart
+        function drawPieChart() {
+            // Sample data for the pie chart
+            const pieData = [
+                { category: 'Category A', value: 30 },
+                { category: 'Category B', value: 20 },
+                { category: 'Category C', value: 50 },
+                { category: 'Category D', value: 15 }
+            ];
+
+            // Set up dimensions and radius for the pie chart
+            const svgElementPie = document.getElementById('pie-chart-preview');
+            if (!svgElementPie) return; // Exit if SVG element not found
+
+            const svgWidthPie = svgElementPie.clientWidth;
+            const svgHeightPie = svgElementPie.clientHeight;
+            const radius = Math.min(svgWidthPie, svgHeightPie) / 2 - 20; // Calculate radius, leaving some margin
+
+            // Clear previous chart content
+            d3.select(svgElementPie).selectAll("*").remove();
+
+            // Append SVG object and move its origin to the center for pie chart
+            const svgPie = d3.select(svgElementPie)
+                .attr("width", svgWidthPie)
+                .attr("height", svgHeightPie)
+                .append("g")
+                .attr("transform", `translate(${svgWidthPie / 2},${svgHeightPie / 2})`); // Center the group
+
+            // Define color scale
+            const color = d3.scaleOrdinal()
+                .domain(pieData.map(d => d.category))
+                .range(d3.schemeCategory10); // D3's built-in color scheme
+
+            // Compute the position of each slice
+            const pie = d3.pie()
+                .value(d => d.value); // Tell pie generator to use 'value' for slice size
+
+            // Arc generator for drawing the slices
+            const arc = d3.arc()
+                .innerRadius(0) // Inner radius for donut chart (0 for pie chart)
+                .outerRadius(radius); // Outer radius of the pie slices
+
+            // Add the slices to the SVG
+            svgPie.selectAll('slices')
+                .data(pie(pieData)) // Bind pie-generated data
+                .enter()
+                .append('path')
+                .attr('d', arc) // Use arc generator to draw path
+                .attr('fill', d => color(d.data.category)) // Fill with color based on category
+                .attr("class", "pie-slice") // Add class for styling
+                .each(function(d) { this._current = d; }); // Store initial data for transitions
+
+            // Add labels to the slices
+            const outerArc = d3.arc()
+                .innerRadius(radius * 1.1)
+                .outerRadius(radius * 1.1);
+
+            svgPie.selectAll('labels')
+                .data(pie(pieData))
+                .enter()
+                .append('text')
+                .text(d => `${d.data.category} (${d.data.value})`) // Text for label
+                .attr('transform', d => `translate(${outerArc.centroid(d)})`) // Position label
+                .style('text-anchor', d => (d.endAngle + d.startAngle) / 2 > Math.PI ? 'end' : 'start') // Align text
+                .style('font-size', '0.75rem')
+                .style('fill', '#374151'); // Gray-700
+        }
+
+        // Function to handle all chart redraws on window resize
+        function handleChartResize() {
+            drawBarChart();
+            drawLineChart();
+            drawScatterPlot();
+            drawPieChart();
+        }
+
+        // Initial chart drawing when the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            drawBarChart();
+            drawLineChart();
+            drawScatterPlot();
+            drawPieChart();
+        });
+
+        // Add resize event listener to redraw charts when window size changes
+        window.addEventListener('resize', handleChartResize);
+    </script>
+</body>
+</html>
