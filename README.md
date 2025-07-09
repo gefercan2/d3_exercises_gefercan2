@@ -30,7 +30,8 @@ symbols: https://d3js.org/d3-shape/symbol#symbolWye<br>
 and some examples in websites
 https://archive.nytimes.com/www.nytimes.com/interactive/2012/09/06/us/politics/convention-word-counts.html
 https://observablehq.com/@d3/tree-of-life <br>
-Reference for visual styling: http://www.d3noob.org/2014/02/styles-in-d3js.html
+Reference for visual styling: http://www.d3noob.org/2014/02/styles-in-d3js.html<br>
+https://www.d3indepth.com/geographic/
 <br>
 A useful conversor from csv to json: https://www.geeksforgeeks.org/csv-to-json-converter/<br>
 <br>
