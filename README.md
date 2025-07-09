@@ -35,7 +35,7 @@ A useful conversor from csv to json: https://www.geeksforgeeks.org/csv-to-json-c
 also for maps: https://www.d3indepth.com/geographic/<br>
 https://d3js.org/d3-geo<br>
 <br>
-Folders:<br/> Exercise 1 is for basic dasboard /<br> Exercise 2 is for network graphics / <br>Exercise 3 is for radial charts /<br> Exercise 4 is for arc diagrams/ <br>Exercise 5 is for Sankey diagrams <br>/Exercise 6 is for hierarchical trees
-the d3_intro_templates_library.html file is a kind of miniguide template
+Folders:<br/>the d3_intro_templates_library.html file is a kind of miniguide template<br> Exercise 1 is for basic dasboard /<br> Exercise 2 is for network graphics / <br>Exercise 3 is for radial charts /<br> Exercise 4 is for arc diagrams/ <br>Exercise 5 is for Sankey diagrams <br>/Exercise 6 is for hierarchical trees
+
 
 
