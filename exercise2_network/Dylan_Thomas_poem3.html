@@ -18,7 +18,6 @@
             background: white;
             padding: 1%;
             border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         
         h1 {
@@ -28,40 +27,44 @@
         }
         
         #network {
-            border: 1px solid #ddd;
-            border-radius: 4px;
+   /*          border: 1px solid #ddd;
+            border-radius: 4px; */
             margin:0px;
             width:100%;
             height:100vh;
             padding: 1%;
-            background-color: #fafafa;
+            /* background-color: #fafafa; */
         }
         
         /* Node styles */
         .node-center {
-            fill: #9b59b6;
-            stroke: #8e44ad;
-            stroke-width: 3;
+            fill: #dbd7dd;
+            stroke: #ede4f1;
+            stroke-width: 15;
         }
         
         .node-strophe {
-            fill: #e74c3c;
-            stroke: #c0392b;
-            stroke-width: 2;
+            fill: #c8b6b4;
+            stroke: #e5d7d5;
+            stroke-width:12;
         }
         
         .node-line {
-            fill: #88e1f0;
+            fill: #add9e1;
+            stroke: #d5e5e3;
+            stroke-width:12;
+            
         }
         
         .node-word {
-            fill: #bbcee2;
+            fill: #cfdff1;
         }
         
         .link {
-            stroke: #999;
+            stroke: #9c9797;
             stroke-width: 2;
             stroke-opacity: 0.6;
+            stroke-dasharray:2px, 5px;
         }
         
         .node-text {
@@ -98,18 +101,23 @@
         }
         
         .instructions {
+            width:15%;
             margin-top: 20px;
             padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
-            border-left: 4px solid #9eb9cb;
+            /* background-color: #f8f9fa; */
+            font-size:0.8em;
+            z-index:5;
+            position:absolute;
+            left:3px;bottom:13%;
         }
         
         .legend {
             margin-top: 20px;
             display: flex;
             justify-content: top;
-            gap: 30px;position:absolute;
+            gap: 30px;font-size:0.8em;padding:1%;
+            position:absolute; background-color: #f8f9fa; 
+            top:23px;
             z-index:5;
         }
         
@@ -170,19 +178,19 @@
 
             <div class="legend">
                 <div class="legend-item">
-                    <div class="legend-color" style="background-color: #9b59b6;"></div>
-                    <span>Central Node</span>
+                    <div class="legend-color" style="background-color: #dbd7dd;"></div>
+                    <span>Poem Title</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background-color: #e74c3c;"></div>
+                    <div class="legend-color" style="background-color: #c8b6b4;"></div>
                     <span>Strophe</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background-color: #3498db;"></div>
+                    <div class="legend-color" style="background-color: #add9e1;"></div>
                     <span>Line</span>
                 </div>
                 <div class="legend-item">
-                    <div class="legend-color" style="background-color: #2ecc71;"></div>
+                    <div class="legend-color" style="background-color: #cfdff1;"></div>
                     <span>Word</span>
                 </div>
             </div>
@@ -373,7 +381,7 @@
                 console.log('Creating force simulation...');
                 
                 // Create radial force to arrange nodes in circular area
-                const radius = Math.min(this.width, this.height) * 0.35;
+                const radius = Math.min(this.width, this.height) * 0.135;
                 
                 this.simulation = d3.forceSimulation(this.nodes)
                     .force('link', d3.forceLink(this.links).id(d => d.id).distance(this.getLinkDistance))
