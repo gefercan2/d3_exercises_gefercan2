@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Force Network Diagram</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 10px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin:0px;
+            background: white;
+            padding: 1%;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        
+        #network {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin:0px;
+            width:100%;
+            height:100vh;
+            padding: 1%;
+            background-color: #fafafa;
+        }
+        
+        /* Node styles */
+        .node-center {
+            fill: #9b59b6;
+            stroke: #8e44ad;
+            stroke-width: 3;
+        }
+        
+        .node-strophe {
+            fill: #e74c3c;
+            stroke: #c0392b;
+            stroke-width: 2;
+        }
+        
+        .node-line {
+            fill: #88e1f0;
+        }
+        
+        .node-word {
+            fill: #bbcee2;
+        }
+        
+        .link {
+            stroke: #999;
+            stroke-width: 2;
+            stroke-opacity: 0.6;
+        }
+        
+        .node-text {
+            font-size: 12px;
+            font-weight: bold;
+            fill: black;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+        }
+        
+        .word-text {
+            font-size: 10px;
+            fill: #333;
+            text-anchor: middle;
+            dominant-baseline: middle;
+            pointer-events: none;
+        }
+        
+        .node {
+            cursor: pointer;
+        }
+        
+        .node:hover {
+            opacity: 0.8;
+        }
+        
+        .node-dimmed {
+            opacity: 0.3;
+        }
+        
+        .link-dimmed {
+            stroke-opacity: 0.2;
+        }
+        
+        .instructions {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid #9eb9cb;
+        }
+        
+        .legend {
+            margin-top: 20px;
+            display: flex;
+            justify-content: top;
+            gap: 30px;position:absolute;
+            z-index:5;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+        
+        .zoom-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .zoom-btn {
+            padding: 8px 12px;
+            background-color: #e9f2f8;
+            color: black;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .zoom-btn:hover {
+            background-color: #4c6a7e;
+        }
+        
+        .svg-container {
+            position: relative;
+        }
+    
+    </style>
+</head>
+
+
+
+<body>
+    <div class="container">
+        
+        <div class="svg-container">
+            <svg id="network"></svg>
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoomIn()">Zoom In</button>
+                <button class="zoom-btn" onclick="zoomOut()">Zoom Out</button>
+                <button class="zoom-btn" onclick="resetZoom()">Reset Zoom</button>
+            </div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #9b59b6;"></div>
+                    <span>Central Node</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #e74c3c;"></div>
+                    <span>Strophe</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #3498db;"></div>
+                    <span>Line</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #2ecc71;"></div>
+                    <span>Word</span>
+                </div>
+            </div>
+
+
+            <div class="instructions">
+                <h3>Instructions:</h3>
+                <ul>
+                    <li><strong>Click on a Line node (blue):</strong> All connected words will align horizontally</li>
+                    <li><strong>Click on a Strophe node (red):</strong> All connected line numbers align vertically and words align horizontally within their lines</li>
+                    <li><strong>Click on background:</strong> Reset to initial overlapping state</li>
+                    <li><strong>Mouse wheel:</strong> Zoom in/out</li>
+                    <li><strong>Drag:</strong> Pan around the diagram</li>
+                </ul>
+            </div>
+        </div>
+        
+       
+        
+        
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <script>
+        /**
+         * Force Network Diagram Application
+         * Creates an interactive network visualization with hierarchical structure
+         */
+        class ForceNetworkDiagram {
+            constructor() {
+                this.csvData = 
+                `Strophe,Line,Words
+                1, 1, Do not go gentle into that good night 
+                1, 2, Old age should burn and rave at close of day  
+                1, 3, Rage rage against the dying of the light.
+                2, 1, Though wise men at their end know dark is right
+                2, 2, Because their words had forked no lightning they
+                2, 3, Do not go gentle into that good night 
+                2, 1, Good men  the last wave by crying how bright
+                2, 2, Their frail deeds might have danced in a green bay
+                2, 3, Rage rage against the dying of the light 
+                3, 1, Wild men who caught and sang the sun in flight 
+                3, 2, And learn too late they grieved it on its way 
+                3, 3, Do not go gentle into that good night  
+                4, 1, Grave men near death who see with blinding sight
+                4, 2, Blind eyes could blaze like meteors and be gay
+                4, 3, Rage rage against the dying of the light 
+                `;
+                
+                this.nodes = [];
+                this.links = [];
+                this.simulation = null;
+                this.svg = null;
+                this.g = null;
+                this.zoom = null;
+                this.width = 1160;
+                this.height = 600;
+                
+                this.init();
+            }
+            
+            /**
+             * Initialize the diagram
+             */
+            init() {
+                this.parseData();
+                this.setupSVG();
+                this.createSimulation();
+                this.createVisualization();
+                this.setupInteractions();
+            }
+            
+            /**
+             * Parse CSV data and create nodes and links
+             */
+            parseData() {
+                console.log('Parsing CSV data...');
+                const lines = this.csvData.trim().split('\n').slice(1); // Skip header
+                const strophes = new Set();
+                const lineNodes = new Map();
+                
+                // Add central node
+                this.nodes.push({
+                    id: 'central',
+                    label: 'Do Not Go Gentle into That Good Night',
+                    type: 'center'
+                });
+                
+                lines.forEach(line => {
+                    const [strophe, lineNum, words] = line.split(',');
+                    
+                    if (strophe && lineNum && words) {
+                        const stropheId = `strophe-${strophe}`;
+                        const lineId = `line-${strophe}-${lineNum}`;
+                        
+                        // Add strophe node if not exists
+                        if (!strophes.has(strophe)) {
+                            this.nodes.push({
+                                id: stropheId,
+                                label: `S${strophe}`,
+                                type: 'strophe',
+                                strophe: strophe
+                            });
+                            strophes.add(strophe);
+                            
+                            // Link central node to strophe
+                            this.links.push({
+                                source: 'central',
+                                target: stropheId
+                            });
+                        }
+                        
+                        // Add line node if not exists
+                        if (!lineNodes.has(lineId)) {
+                            this.nodes.push({
+                                id: lineId,
+                                label: `L${lineNum}`,
+                                type: 'line',
+                                strophe: strophe,
+                                line: lineNum
+                            });
+                            lineNodes.set(lineId, true);
+                            
+                            // Link strophe to line
+                            this.links.push({
+                                source: stropheId,
+                                target: lineId
+                            });
+                        }
+                        
+                        // Process words
+                        this.processWords(words, strophe, lineNum, lineId);
+                    }
+                });
+                
+                console.log(`Created ${this.nodes.length} nodes and ${this.links.length} links`);
+            }
+            
+            /**
+             * Process words from a line and create word nodes
+             */
+            processWords(words, strophe, lineNum, lineId) {
+                const wordList = words.replace(/"/g, '').split(' ').filter(w => w.trim());
+                wordList.forEach((word, index) => {
+                    const wordId = `word-${strophe}-${lineNum}-${index}`;
+                    this.nodes.push({
+                        id: wordId,
+                        label: word.trim(),
+                        type: 'word',
+                        strophe: strophe,
+                        line: lineNum,
+                        wordIndex: index
+                    });
+                    
+                    // Link line to word
+                    this.links.push({
+                        source: lineId,
+                        target: wordId
+                    });
+                });
+            }
+            
+            /**
+             * Setup SVG canvas and zoom behavior
+             */
+            setupSVG() {
+                console.log('Setting up SVG...');
+                this.svg = d3.select('#network');
+                
+                // Create zoom behavior
+                this.zoom = d3.zoom()
+                    .scaleExtent([0.1, 2])
+                    .on('zoom', (event) => {
+                        this.g.attr('transform', event.transform);
+                    });
+                
+                // Apply zoom to SVG
+                this.svg.call(this.zoom);
+                
+                // Create main group for all elements
+                this.g = this.svg.append('g');
+            }
+            
+            /**
+             * Create force simulation with radial positioning
+             */
+            createSimulation() {
+                console.log('Creating force simulation...');
+                
+                // Create radial force to arrange nodes in circular area
+                const radius = Math.min(this.width, this.height) * 0.35;
+                
+                this.simulation = d3.forceSimulation(this.nodes)
+                    .force('link', d3.forceLink(this.links).id(d => d.id).distance(this.getLinkDistance))
+                    .force('charge', d3.forceManyBody().strength(this.getChargeStrength))
+                    .force('center', d3.forceCenter(this.width / 2, this.height / 2))
+                    .force('collision', d3.forceCollide().radius(this.getCollisionRadius))
+                    .force('radial', d3.forceRadial(radius, this.width / 2, this.height / 2).strength(0.1));
+            }
+            
+            /**
+             * Get link distance based on node types
+             */
+            getLinkDistance(d) {
+                if (d.source.type === 'center') return 150;
+                if (d.source.type === 'strophe') return 100;
+                if (d.source.type === 'line') return 60;
+                return 40;
+            }
+            
+            /**
+             * Get charge strength based on node type
+             */
+            getChargeStrength(d) {
+                if (d.type === 'center') return -1000;
+                if (d.type === 'strophe') return -500;
+                if (d.type === 'line') return -300;
+                return -150;
+            }
+            
+            /**
+             * Get collision radius based on node type
+             */
+            getCollisionRadius(d) {
+                if (d.type === 'center') return 20;
+                if (d.type === 'strophe') return 25;
+                if (d.type === 'line') return 20;
+                return 15;
+            }
+            
+            /**
+             * Create the visual elements
+             */
+            createVisualization() {
+                console.log('Creating visualization...');
+                
+                // Create links
+                this.link = this.g.append('g')
+                    .selectAll('line')
+                    .data(this.links)
+                    .enter().append('line')
+                    .attr('class', 'link');
+                
+                // Create nodes
+                this.node = this.g.append('g')
+                    .selectAll('g')
+                    .data(this.nodes)
+                    .enter().append('g')
+                    .attr('class', 'node')
+                    .call(this.createDragBehavior());
+                
+                // Create node shapes and text
+                this.createNodeShapes();
+                
+                // Update positions on simulation tick
+                this.simulation.on('tick', () => this.updatePositions());
+            }
+            
+            /**
+             * Create shapes for different node types
+             */
+            createNodeShapes() {
+                this.node.each((d, i, nodes) => {
+                    const g = d3.select(nodes[i]);
+                    
+                    if (d.type === 'word') {
+                        this.createWordNode(g, d);
+                    } else {
+                        this.createCircularNode(g, d);
+                    }
+                });
+            }
+            
+            /**
+             * Create word node with rounded rectangle
+             */
+            createWordNode(g, d) {
+                const textWidth = d.label.length * 6 + 10;
+                g.append('rect')
+                    .attr('class', 'node-word')
+                    .attr('width', textWidth)
+                    .attr('height', 20)
+                    .attr('x', -textWidth/2)
+                    .attr('y', -10)
+                    .attr('rx', 10);
+                
+                g.append('text')
+                    .attr('class', 'word-text')
+                    .text(d.label);
+            }
+            
+            /**
+             * Create circular node (center, strophe, line)
+             */
+            createCircularNode(g, d) {
+                let radius, cssClass;
+                
+                switch(d.type) {
+                    case 'center':
+                        radius = 25;
+                        cssClass = 'node-center';
+                        break;
+                    case 'strophe':
+                        radius = 20;
+                        cssClass = 'node-strophe';
+                        break;
+                    case 'line':
+                        radius = 15;
+                        cssClass = 'node-line';
+                        break;
+                }
+                
+                g.append('circle')
+                    .attr('class', cssClass)
+                    .attr('r', radius);
+                
+                g.append('text')
+                    .attr('class', 'node-text')
+                    .text(d.label);
+            }
+            
+            /**
+             * Setup all interactions
+             */
+            setupInteractions() {
+                console.log('Setting up interactions...');
+                
+                // Node click handlers
+                this.node.on('click', (event, d) => {
+                    event.stopPropagation();
+                    this.handleNodeClick(d);
+                });
+                
+                // Background click handler - reset to initial state
+                this.svg.on('click', (event) => {
+                    // Only trigger if clicking on background (not on nodes)
+                    if (event.target === this.svg.node() || event.target.tagName === 'g') {
+                        this.resetToInitialState();
+                    }
+                });
+            }
+            
+            /**
+             * Handle node click events with opacity management
+             */
+            handleNodeClick(d) {
+                console.log(`Clicked node: ${d.label} (${d.type})`);
+                
+                // Reset all nodes to full opacity first
+                this.resetOpacity();
+                
+                // Apply dimming to other nodes in same hierarchy level
+                this.applyOpacityEffects(d);
+                
+                switch(d.type) {
+                    case 'line':
+                        this.alignWordsHorizontally(d);
+                        break;
+                    case 'strophe':
+                        this.alignStropheVertically(d);
+                        break;
+                    case 'center':
+                        this.resetToInitialState();
+                        break;
+                }
+            }
+            
+            /**
+             * Apply opacity effects based on selected node
+             */
+            applyOpacityEffects(selectedNode) {
+                console.log(`Applying opacity effects for ${selectedNode.label}`);
+                
+                // Dim nodes based on hierarchy and selection
+                this.node.classed('node-dimmed', (d) => {
+                    // Don't dim the selected node
+                    if (d.id === selectedNode.id) return false;
+                    
+                    // Dim nodes of the same type that are not related
+                    if (selectedNode.type === 'strophe' && d.type === 'strophe') {
+                        return d.strophe !== selectedNode.strophe;
+                    }
+                    
+                    if (selectedNode.type === 'line' && d.type === 'line') {
+                        return !(d.strophe === selectedNode.strophe && d.line === selectedNode.line);
+                    }
+                    
+                    if (selectedNode.type === 'word' && d.type === 'word') {
+                        return !(d.strophe === selectedNode.strophe && d.line === selectedNode.line);
+                    }
+                    
+                    // Dim unrelated branches
+                    if (selectedNode.type === 'strophe') {
+                        return d.type !== 'center' && d.strophe !== selectedNode.strophe;
+                    }
+                    
+                    if (selectedNode.type === 'line') {
+                        return d.type !== 'center' && d.type !== 'strophe' && 
+                               !(d.strophe === selectedNode.strophe && (d.type === 'line' || d.line === selectedNode.line));
+                    }
+                    
+                    return false;
+                });
+                
+                // Dim links that are not connected to selected node or its related nodes
+                this.link.classed('link-dimmed', (d) => {
+                    const isRelated = this.isLinkRelated(d, selectedNode);
+                    return !isRelated;
+                });
+            }
+            
+            /**
+             * Check if a link is related to the selected node
+             */
+            isLinkRelated(link, selectedNode) {
+                const sourceNode = typeof link.source === 'object' ? link.source : this.nodes.find(n => n.id === link.source);
+                const targetNode = typeof link.target === 'object' ? link.target : this.nodes.find(n => n.id === link.target);
+                
+                // Always keep central node links visible
+                if (sourceNode.type === 'center' || targetNode.type === 'center') return true;
+                
+                // Keep links within the same strophe
+                if (selectedNode.type === 'strophe') {
+                    return sourceNode.strophe === selectedNode.strophe || targetNode.strophe === selectedNode.strophe;
+                }
+                
+                // Keep links within the same line
+                if (selectedNode.type === 'line') {
+                    return (sourceNode.strophe === selectedNode.strophe && sourceNode.line === selectedNode.line) ||
+                           (targetNode.strophe === selectedNode.strophe && targetNode.line === selectedNode.line) ||
+                           (sourceNode.type === 'strophe' && sourceNode.strophe === selectedNode.strophe) ||
+                           (targetNode.type === 'strophe' && targetNode.strophe === selectedNode.strophe);
+                }
+                
+                return false;
+            }
+            
+            /**
+             * Reset all nodes and links to full opacity
+             */
+            resetOpacity() {
+                this.node.classed('node-dimmed', false);
+                this.link.classed('link-dimmed', false);
+            }
+            
+            /**
+             * Align words horizontally for a given line with overlap prevention
+             */
+            alignWordsHorizontally(lineNode) {
+                console.log(`Aligning words horizontally for line ${lineNode.label}`);
+                
+                const words = this.nodes.filter(n => 
+                    n.type === 'word' && 
+                    n.strophe === lineNode.strophe && 
+                    n.line === lineNode.line
+                );
+                
+                const lineNodeObj = this.nodes.find(n => n.id === lineNode.id);
+                
+                // Calculate total width needed for all words with padding
+                let totalWidth = 0;
+                const wordWidths = words.map(word => {
+                    const width = Math.max(word.label.length * 7 + 20, 50); // Minimum 50px width
+                    totalWidth += width;
+                    return width;
+                });
+                
+                // Add spacing between words
+                const spacing = 10;
+                totalWidth += (words.length - 1) * spacing;
+                
+                // Position line node
+                lineNodeObj.fx = this.width / 2;
+                lineNodeObj.fy = this.height / 2;
+                
+                // Position words horizontally without overlap
+                let currentX = lineNodeObj.fx - totalWidth / 2;
+                words.forEach((word, index) => {
+                    const wordWidth = wordWidths[index];
+                    word.fx = currentX + wordWidth / 2;
+                    word.fy = lineNodeObj.fy;
+                    currentX += wordWidth + spacing;
+                });
+                
+                this.simulation.alpha(0.3).restart();
+            }
+            
+            /**
+             * Align strophe vertically with horizontal word alignment and overlap prevention
+             */
+            alignStropheVertically(stropheNode) {
+                console.log(`Aligning strophe vertically for ${stropheNode.label}`);
+                
+                const stropheLines = this.nodes.filter(n => 
+                    n.type === 'line' && 
+                    n.strophe === stropheNode.strophe
+                );
+                
+                const stropheNodeObj = this.nodes.find(n => n.id === stropheNode.id);
+                
+                // Calculate vertical spacing needed
+                const lineSpacing = 80;
+                const totalHeight = (stropheLines.length - 1) * lineSpacing;
+                
+                // Position strophe node
+                stropheNodeObj.fx = this.width / 2;
+                stropheNodeObj.fy = this.height / 2 - totalHeight / 2 - 40;
+                
+                // Position lines vertically and align their words horizontally
+                stropheLines.forEach((line, lineIndex) => {
+                    line.fx = stropheNodeObj.fx;
+                    line.fy = stropheNodeObj.fy + (lineIndex + 1) * lineSpacing;
+                    
+                    // Position words for this line horizontally without overlap
+                    const words = this.nodes.filter(n => 
+                        n.type === 'word' && 
+                        n.strophe === line.strophe && 
+                        n.line === line.line
+                    );
+                    
+                    // Calculate word positioning with proper spacing
+                    let totalWidth = 0;
+                    const wordWidths = words.map(word => {
+                        const width = Math.max(word.label.length * 7 + 20, 50);
+                        totalWidth += width;
+                        return width;
+                    });
+                    
+                    const spacing = 8;
+                    totalWidth += (words.length - 1) * spacing;
+                    
+                    let currentX = line.fx - totalWidth / 2;
+                    words.forEach((word, wordIndex) => {
+                        const wordWidth = wordWidths[wordIndex];
+                        word.fx = currentX + wordWidth / 2;
+                        word.fy = line.fy;
+                        currentX += wordWidth + spacing;
+                    });
+                });
+                
+                this.simulation.alpha(0.3).restart();
+            }
+            
+            /**
+             * Reset to initial overlapping state with circular arrangement
+             */
+            resetToInitialState() {
+                console.log('Resetting to initial state...');
+                
+                // Reset opacity effects
+                this.resetOpacity();
+                
+                // Remove all fixed positions
+                this.nodes.forEach(node => {
+                    node.fx = null;
+                    node.fy = null;
+                });
+                
+                // Re-enable radial force for circular arrangement
+                this.simulation.force('radial', d3.forceRadial(
+                    Math.min(this.width, this.height) * 0.35, 
+                    this.width / 2, 
+                    this.height / 2
+                ).strength(0.1));
+                
+                // Restart simulation with high alpha for quick convergence
+                this.simulation.alpha(1).restart();
+            }
+            
+            /**
+             * Update node and link positions
+             */
+            updatePositions() {
+                this.link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+                
+                this.node.attr('transform', d => `translate(${d.x},${d.y})`);
+            }
+            
+            /**
+             * Create drag behavior
+             */
+            createDragBehavior() {
+                return d3.drag()
+                    .on('start', (event, d) => {
+                        if (!event.active) this.simulation.alphaTarget(0.3).restart();
+                        d.fx = d.x;
+                        d.fy = d.y;
+                    })
+                    .on('drag', (event, d) => {
+                        d.fx = event.x;
+                        d.fy = event.y;
+                    })
+                    .on('end', (event, d) => {
+                        if (!event.active) this.simulation.alphaTarget(0);
+                        // Keep node fixed if it was positioned by interaction
+                        if (event.sourceEvent.type !== 'click') {
+                            d.fx = null;
+                            d.fy = null;
+                        }
+                    });
+            }
+            
+            /**
+             * Zoom control methods
+             */
+            zoomIn() {
+                this.svg.transition().duration(300).call(
+                    this.zoom.scaleBy, 1.5
+                );
+            }
+            
+            zoomOut() {
+                this.svg.transition().duration(300).call(
+                    this.zoom.scaleBy, 1 / 1.5
+                );
+            }
+            
+            resetZoom() {
+                this.svg.transition().duration(500).call(
+                    this.zoom.transform,
+                    d3.zoomIdentity
+                );
+            }
+        }
+        
+        // Initialize the diagram
+        let diagram;
+        
+        // Wait for DOM to load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Initializing Force Network Diagram...');
+            diagram = new ForceNetworkDiagram();
+        });
+        
+        // Global zoom control functions
+        function zoomIn() {
+            if (diagram) diagram.zoomIn();
+        }
+        
+        function zoomOut() {
+            if (diagram) diagram.zoomOut();
+        }
+        
+        function resetZoom() {
+            if (diagram) diagram.resetZoom();
+        }
+        
+        // Mouse wheel zoom
+        document.addEventListener('wheel', (event) => {
+            if (event.target.closest('#network')) {
+                event.preventDefault();
+            }
+        });
+    </script>
+</body>
+</html>
