@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIFA Confederations Sankey Diagram</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-sankey/0.12.3/d3-sankey.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            pointer-events: none;
+            font-size: 12px;
+            z-index: 1000;
+        }
+        .link {
+            fill: none;
+            stroke-opacity: 0.6;
+            cursor: pointer;
+        }
+        .link:hover {
+            stroke-opacity: 1;
+        }
+        .node rect {
+            fill-opacity: 0.6;
+            cursor: pointer;
+            stroke: #000;
+            stroke-width: 1px;
+        }
+        .node rect:hover {
+            fill-opacity: 1;
+        }
+        .node text {
+            font-size: 12px;
+            fill: #333;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FIFA Confederations: 2018 vs 2022 World Cup Tournament Stages</h1>
+        <div id="sankey"></div>
+    </div>
+
+    <script>
+        // Data setup
+        const confederationData = {
+            AFC: 14,
+            OFC: 0,
+            CAF: 54,
+            CONCACAF: 41,
+            CONMEBOL: 10,
+            UEFA: 55
+        };
+
+        const tournament2018Data = [
+            {stage: "Fase de Grupos", AFC: 6, OFC: 0, CAF: 5, CONCACAF: 3, CONMEBOL: 5, UEFA: 14},
+            {stage: "Octavos de final", AFC: 1, OFC: 0, CAF: 0, CONCACAF: 1, CONMEBOL: 4, UEFA: 10},
+            {stage: "Cuartos de final", AFC: 0, OFC: 0, CAF: 0, CONCACAF: 0, CONMEBOL: 2, UEFA: 6},
+            {stage: "Semifinal", AFC: 0, OFC: 0, CAF: 0, CONCACAF: 0, CONMEBOL: 0, UEFA: 4},
+            {stage: "Final", AFC: 0, OFC: 0, CAF: 0, CONCACAF: 0, CONMEBOL: 0, UEFA: 2}
+        ];
+
+        const tournament2022Data = [
+            {stage: "Fase de Grupos", AFC: 6, OFC: 0, CAF: 5, CONCACAF: 4, CONMEBOL: 4, UEFA: 13},
+            {stage: "Octavos de final", AFC: 3, OFC: 0, CAF: 2, CONCACAF: 1, CONMEBOL: 2, UEFA: 8},
+            {stage: "Cuartos de final", AFC: 0, OFC: 0, CAF: 1, CONCACAF: 0, CONMEBOL: 2, UEFA: 5},
+            {stage: "Semifinal", AFC: 0, OFC: 0, CAF: 1, CONCACAF: 0, CONMEBOL: 1, UEFA: 2},
+            {stage: "Final", AFC: 0, OFC: 0, CAF: 0, CONCACAF: 0, CONMEBOL: 1, UEFA: 1}
+        ];
+
+        // Create nodes and links
+        const nodes = [];
+        const links = [];
+        let nodeIndex = 0;
+
+        // Add confederation nodes (source)
+        const confederations = Object.keys(confederationData);
+        confederations.forEach(conf => {
+            nodes.push({
+                id: nodeIndex,
+                name: `${conf} (${confederationData[conf]} members)`,
+                confederation: conf,
+                type: 'confederation'
+            });
+            nodeIndex++;
+        });
+
+        // Add 2018 tournament stage nodes (middle)
+        const stages = ["Fase de Grupos", "Octavos de final", "Cuartos de final", "Semifinal", "Final"];
+        stages.forEach(stage => {
+            nodes.push({
+                id: nodeIndex,
+                name: `2018 ${stage}`,
+                stage: stage,
+                year: 2018,
+                type: 'stage2018'
+            });
+            nodeIndex++;
+        });
+
+        // Add 2022 tournament stage nodes (target)
+        stages.forEach(stage => {
+            nodes.push({
+                id: nodeIndex,
+                name: `2022 ${stage}`,
+                stage: stage,
+                year: 2022,
+                type: 'stage2022'
+            });
+            nodeIndex++;
+        });
+
+        // Create links between confederations and 2018 tournament stages
+        confederations.forEach((conf, confIndex) => {
+            tournament2018Data.forEach((stageData, stageIndex) => {
+                const value = stageData[conf] || 0;
+                if (value > 0) {
+                    links.push({
+                        source: confIndex,
+                        target: confederations.length + stageIndex,
+                        value: value,
+                        confederation: conf,
+                        stage: stageData.stage,
+                        year: 2018
+                    });
+                }
+            });
+        });
+
+        // Create links between confederations and 2022 tournament stages
+        confederations.forEach((conf, confIndex) => {
+            tournament2022Data.forEach((stageData, stageIndex) => {
+                const value = stageData[conf] || 0;
+                if (value > 0) {
+                    links.push({
+                        source: confIndex,
+                        target: confederations.length + stages.length + stageIndex,
+                        value: value,
+                        confederation: conf,
+                        stage: stageData.stage,
+                        year: 2022
+                    });
+                }
+            });
+        });
+
+        // Set up dimensions and margins
+        const margin = {top: 20, right: 20, bottom: 20, left: 20};
+        const width = 1400 - margin.left - margin.right;
+        const height = 700 - margin.top - margin.bottom;
+
+        // Create SVG
+        const svg = d3.select("#sankey")
+            .append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
+
+        // Create tooltip
+        const tooltip = d3.select("body")
+            .append("div")
+            .attr("class", "tooltip")
+            .style("opacity", 0);
+
+        // Create Sankey generator with adjusted node positioning for stacked appearance
+        const sankey = d3.sankey()
+            .nodeWidth(15)
+            .nodePadding(3)
+            .extent([[1, 1], [width - 1, height - 6]]);
+
+        // Generate the sankey diagram
+        const {nodes: sankeyNodes, links: sankeyLinks} = sankey({
+            nodes: nodes.map(d => Object.assign({}, d)),
+            links: links.map(d => Object.assign({}, d))
+        });
+
+        // Color scale for confederations
+        const colorScale = d3.scaleOrdinal()
+            .domain(confederations)
+            .range(["#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7", "#DDA0DD"]);
+
+        // Draw links with confederation-based coloring
+        svg.append("g")
+            .selectAll("path")
+            .data(sankeyLinks)
+            .join("path")
+            .attr("class", "link")
+            .attr("d", d3.sankeyLinkHorizontal())
+            .attr("stroke", d => colorScale(d.confederation))
+            .attr("stroke-width", d => Math.max(1, d.width))
+            .style("mix-blend-mode", "multiply")
+            .on("mouseover", function(event, d) {
+                d3.select(this).style("stroke-opacity", 1);
+                tooltip.transition().duration(200).style("opacity", .9);
+                let tooltipText = `${d.confederation} → ${d.year} ${d.stage}<br/>Teams: ${d.value}`;
+                tooltip.html(tooltipText)
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mouseout", function(event, d) {
+                d3.select(this).style("stroke-opacity", 0.6);
+                tooltip.transition().duration(500).style("opacity", 0);
+            })
+            .on("click", function(event, d) {
+                // Toggle selection
+                const isSelected = d3.select(this).classed("selected");
+                d3.selectAll(".link").classed("selected", false).style("stroke-opacity", 0.6);
+                if (!isSelected) {
+                    d3.select(this).classed("selected", true).style("stroke-opacity", 1);
+                }
+            });
+
+        // Draw stacked bars for nodes
+        const node = svg.append("g")
+            .selectAll("g")
+            .data(sankeyNodes)
+            .join("g")
+            .attr("class", "node");
+
+        // Create stacked segments for tournament stage nodes
+        node.each(function(d) {
+            const nodeGroup = d3.select(this);
+            
+            if (d.type === 'confederation') {
+                // Draw single rectangle for confederations
+                nodeGroup.append("rect")
+                    .attr("x", d.x0)
+                    .attr("y", d.y0)
+                    .attr("height", d.y1 - d.y0)
+                    .attr("width", d.x1 - d.x0)
+                    .attr("fill", colorScale(d.confederation))
+                    .attr("stroke", "#fff")
+                    .attr("stroke-width", 1);
+            } else {
+                // Draw stacked segments for tournament stages
+                const stageData = d.type === 'stage2018' ? 
+                    tournament2018Data.find(s => s.stage === d.stage) :
+                    tournament2022Data.find(s => s.stage === d.stage);
+                
+                let currentY = d.y0;
+                const totalHeight = d.y1 - d.y0;
+                const totalTeams = Object.keys(stageData).filter(key => key !== 'stage')
+                    .reduce((sum, conf) => sum + (stageData[conf] || 0), 0);
+                
+                confederations.forEach(conf => {
+                    const teams = stageData[conf] || 0;
+                    if (teams > 0) {
+                        const segmentHeight = (teams / totalTeams) * totalHeight;
+                        
+                        nodeGroup.append("rect")
+                            .attr("x", d.x0)
+                            .attr("y", currentY)
+                            .attr("height", segmentHeight)
+                            .attr("width", d.x1 - d.x0)
+                            .attr("fill", colorScale(conf))
+                            .attr("stroke", "#fff")
+                            .attr("stroke-width", 0.5)
+                            .attr("data-confederation", conf)
+                            .attr("data-teams", teams);
+                        
+                        currentY += segmentHeight;
+                    }
+                });
+            }
+        });
+        // Add hover interactions to nodes
+        node.selectAll("rect")
+            .on("mouseover", function(event, d) {
+                d3.select(this).style("fill-opacity", 1);
+                let tooltipText;
+                
+                const conf = d3.select(this).attr("data-confederation");
+                const teams = d3.select(this).attr("data-teams");
+                
+                if (conf && teams) {
+                    // Stacked segment
+                    const nodeData = d3.select(this.parentNode).datum();
+                    tooltipText = `${conf} in ${nodeData.year} ${nodeData.stage}<br/>Teams: ${teams}`;
+                } else {
+                    // Full node
+                    const nodeData = d3.select(this.parentNode).datum();
+                    if (nodeData.type === 'confederation') {
+                        tooltipText = `${nodeData.confederation}<br/>Total Members: ${confederationData[nodeData.confederation]}`;
+                    } else if (nodeData.type === 'stage2018') {
+                        const stageData = tournament2018Data.find(stage => stage.stage === nodeData.stage);
+                        const total = Object.keys(stageData).filter(key => key !== 'stage')
+                            .reduce((sum, conf) => sum + (stageData[conf] || 0), 0);
+                        tooltipText = `2018 ${nodeData.stage}<br/>Total Teams: ${total}`;
+                    } else {
+                        const stageData = tournament2022Data.find(stage => stage.stage === nodeData.stage);
+                        const total = Object.keys(stageData).filter(key => key !== 'stage')
+                            .reduce((sum, conf) => sum + (stageData[conf] || 0), 0);
+                        tooltipText = `2022 ${nodeData.stage}<br/>Total Teams: ${total}`;
+                    }
+                }
+                
+                tooltip.transition().duration(200).style("opacity", .9);
+                tooltip.html(tooltipText)
+                    .style("left", (event.pageX + 10) + "px")
+                    .style("top", (event.pageY - 28) + "px");
+            })
+            .on("mouseout", function(event, d) {
+                d3.select(this).style("fill-opacity", 0.6);
+                tooltip.transition().duration(500).style("opacity", 0);
+            })
+            .on("click", function(event, d) {
+                // Toggle selection
+                const isSelected = d3.select(this).classed("selected");
+                d3.selectAll(".node rect").classed("selected", false).style("fill-opacity", 0.6);
+                if (!isSelected) {
+                    d3.select(this).classed("selected", true).style("fill-opacity", 1);
+                }
+            });
+
+        // Add labels
+        node.append("text")
+            .attr("x", d => d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6)
+            .attr("y", d => (d.y1 + d.y0) / 2)
+            .attr("dy", "0.35em")
+            .attr("text-anchor", d => d.x0 < width / 2 ? "start" : "end")
+            .text(d => d.name)
+            .style("font-weight", "bold");
+
+    </script>
+</body>
+</html>
