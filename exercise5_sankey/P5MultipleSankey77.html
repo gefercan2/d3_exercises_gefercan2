@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FIFA Confederations Sankey Diagram - p5.js Draggable</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.7.0/p5.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #f5f5f5;
+            overflow: hidden;
+        }
+        .container {
+            width: 100vw;
+            height: 100vh;
+            background: white;
+            position: relative;
+        }
+        h1 {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #333;
+            margin: 0;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 18px;
+        }
+        #tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            pointer-events: none;
+            font-size: 12px;
+            z-index: 1000;
+            display: none;
+        }
+        .debug-info {
+            position: absolute;
+            top: 60px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 10px;
+            display: none;
+            z-index: 1000;
+        }
+        .controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>FIFA Confederations: 2010, 2014, 2018 vs 2022 World Cup Tournament Stages (Draggable)</h1>
+        <div id="p5-container"></div>
+        <div id="tooltip"></div>
+        <div id="debug-info" class="debug-info"></div>
+        <div class="controls">
+            Controls: D = Debug | R = Reset View | C = Center | Mouse Wheel = Zoom | Right Click + Drag = Pan | Left Click + Drag = Move Bars
+        </div>
+    </div>
+
+    <script>
+        // ==========================================
+        // DATA CONFIGURATION
+        // ==========================================
+        
+        const DATA_CONFIG = {
+            confederations: {
+                AFC: 14,
+                OFC: 0,
+                CAF: 54,
+                CONCACAF: 41,
+                CONMEBOL: 10,
+                UEFA: 55
+            },
+            
+            tournament2010: [
+                {stage: "Fase de Grupos", AFC: 6, OFC: 0, CAF: 5, CONCACAF: 3, CONMEBOL: 5, UEFA: 6},
+                {stage: "Octavos de final", AFC: 1, OFC: 0, CAF: 0, CONCACAF: 1, CONMEBOL: 4, UEFA: 10},
+                {stage: "Cuartos de final", AFC: 0, OFC: 0, CAF: 0, CONCACAF: 0, CONMEBOL: 2, UEFA: 6},
+                {stage: "Semifinal", AFC: 0, OFC: 0, CAF: 0, CONCACAF: 0, CONMEBOL: 0, UEFA: 4},
+                {stage: "Final", AFC: 0, OFC: 0, CAF: 0, CONCACAF: 0, CONMEBOL: 0, UEFA: 2}
+            ],
+            
+            tournament2014: [
+                {stage: "Fase de Grupos", AFC: 6, OFC: 0, CAF: 5, CONCACAF: 3, CONMEBOL: 5, UEFA: 14},
+                {stage: "Octavos de final", AFC: 1, OFC: 0, CAF: 0, CONCACAF: 1, CONMEBOL: 4, UEFA: 10},
+                {stage: "Cuartos de final", AFC: 0, OFC: 0, CAF: 0, CONCACAF: 0, CONMEBOL: 2, UEFA: 6},
+                {stage: "Semifinal", AFC: 0, OFC: 0, CAF: 0, CONCACAF: 0, CONMEBOL: 2, UEFA: 2},
+                {stage: "Final", AFC: 0, OFC: 0, CAF: 0, CONCACAF: 0, CONMEBOL: 1, UEFA: 1}
+            ],
+            
+            tournament2018: [
+                {stage: "Fase de Grupos", AFC: 6, OFC: 0, CAF: 5, CONCACAF: 3, CONMEBOL: 5, UEFA: 14},
+                {stage: "Octavos de final", AFC: 1, OFC: 0, CAF: 0, CONCACAF: 1, CONMEBOL: 4, UEFA: 10},
+                {stage: "Cuartos de final", AFC: 0, OFC: 0, CAF: 0, CONCACAF: 0, CONMEBOL: 2, UEFA: 6},
+                {stage: "Semifinal", AFC: 0, OFC: 0, CAF: 0, CONCACAF: 0, CONMEBOL: 0, UEFA: 4},
+                {stage: "Final", AFC: 0, OFC: 0, CAF: 0, CONCACAF: 0, CONMEBOL: 0, UEFA: 2}
+            ],
+            
+            tournament2022: [
+                {stage: "Fase de Grupos", AFC: 6, OFC: 0, CAF: 5, CONCACAF: 4, CONMEBOL: 4, UEFA: 13},
+                {stage: "Octavos de final", AFC: 3, OFC: 0, CAF: 2, CONCACAF: 1, CONMEBOL: 2, UEFA: 8},
+                {stage: "Cuartos de final", AFC: 0, OFC: 0, CAF: 1, CONCACAF: 0, CONMEBOL: 2, UEFA: 5},
+                {stage: "Semifinal", AFC: 0, OFC: 0, CAF: 1, CONCACAF: 0, CONMEBOL: 1, UEFA: 2},
+                {stage: "Final", AFC: 0, OFC: 0, CAF: 0, CONCACAF: 0, CONMEBOL: 1, UEFA: 1}
+            ]
+        };
+
+        // ==========================================
+        // VISUAL CONFIGURATION
+        // ==========================================
+        
+        const VISUAL_CONFIG = {
+            canvas: {
+                width: 2000,  // Virtual canvas size larger than viewport
+                height: 1200
+            },
+            
+            viewport: {
+                width: 0,  // Will be set to window size
+                height: 0
+            },
+            
+            margin: {
+                top: 80,  // Increased for title space
+                right: 100, 
+                bottom: 60, 
+                left: 100
+            },
+            
+            nodes: {
+                width: 25,  // Slightly wider for better visibility
+                minHeight: 20,
+                padding: 20
+            },
+            
+            panning: {
+                x: 0,
+                y: 0,
+                isDragging: false,
+                lastMouseX: 0,
+                lastMouseY: 0,
+                sensitivity: 1.0
+            },
+            
+            zoom: {
+                level: 1.0,
+                min: 0.3,
+                max: 3.0,
+                sensitivity: 0.1
+            },
+            
+            links: {
+                minStrokeWidth: 1,
+                maxStrokeWidth: 60,
+                opacity: {
+                    normal: 150,
+                    selected: 255,
+                    dimmed: 100
+                }
+            },
+            
+            colors: {
+                AFC: [255, 107, 107],
+                OFC: [78, 205, 196],
+                CAF: [69, 183, 209],
+                CONCACAF: [150, 206, 180],
+                CONMEBOL: [155, 134, 167],
+                UEFA: [221, 160, 221]
+            }
+        };
+
+        // ==========================================
+        // GLOBAL STATE VARIABLES
+        // ==========================================
+        
+        let canvas;
+        let tooltip;
+        let debugInfo;
+        let selectedElement = null;
+        let draggedNode = null;
+        let dragOffset = { x: 0, y: 0 };
+        let debugMode = false;
+        
+        // Data structures
+        let confederationNodes = [];
+        let stage2010Nodes = [];
+        let stage2014Nodes = [];
+        let stage2018Nodes = [];
+        let stage2022Nodes = [];
+        let allNodes = [];
+        let links = [];
+
+        // ==========================================
+        // INITIALIZATION FUNCTIONS
+        // ==========================================
+        
+        function setup() {
+            // Set viewport dimensions
+            VISUAL_CONFIG.viewport.width = windowWidth;
+            VISUAL_CONFIG.viewport.height = windowHeight;
+            
+            // Initialize full-screen canvas
+            canvas = createCanvas(VISUAL_CONFIG.viewport.width, VISUAL_CONFIG.viewport.height);
+            canvas.parent('p5-container');
+            tooltip = select('#tooltip');
+            debugInfo = select('#debug-info');
+            
+            // Initialize data structures
+            initializeNodes();
+            createLinks();
+            updateAllNodesArray();
+            
+            // Set text properties
+            textAlign(CENTER, CENTER);
+            textSize(11);
+            
+            console.log('Full-screen Sankey diagram initialized successfully');
+            console.log(`Canvas: ${VISUAL_CONFIG.viewport.width}x${VISUAL_CONFIG.viewport.height}`);
+            console.log(`Virtual space: ${VISUAL_CONFIG.canvas.width}x${VISUAL_CONFIG.canvas.height}`);
+            console.log(`Nodes: ${allNodes.length}, Links: ${links.length}`);
+        }
+
+        function windowResized() {
+            // Handle window resize
+            VISUAL_CONFIG.viewport.width = windowWidth;
+            VISUAL_CONFIG.viewport.height = windowHeight;
+            resizeCanvas(windowWidth, windowHeight);
+            console.log(`Canvas resized to: ${windowWidth}x${windowHeight}`);
+        }
+
+        function initializeNodes() {
+            console.log('Initializing nodes...');
+            
+            // Clear existing nodes
+            confederationNodes = [];
+            stage2010Nodes = [];
+            stage2014Nodes = [];
+            stage2018Nodes = [];
+            stage2022Nodes = [];
+            
+            // Create confederation nodes
+            createConfederationNodes();
+            
+            // Create tournament stage nodes for all years
+            createTournamentNodes(DATA_CONFIG.tournament2010, stage2010Nodes, 2010);
+            createTournamentNodes(DATA_CONFIG.tournament2014, stage2014Nodes, 2014);
+            createTournamentNodes(DATA_CONFIG.tournament2018, stage2018Nodes, 2018);
+            createTournamentNodes(DATA_CONFIG.tournament2022, stage2022Nodes, 2022);
+            
+            console.log(`Created ${confederationNodes.length} confederation nodes`);
+            console.log(`Created ${stage2010Nodes.length} 2010 stage nodes`);
+            console.log(`Created ${stage2014Nodes.length} 2014 stage nodes`);
+            console.log(`Created ${stage2018Nodes.length} 2018 stage nodes`);
+            console.log(`Created ${stage2022Nodes.length} 2022 stage nodes`);
+        }
+
+        function createConfederationNodes() {
+            const confederations = Object.keys(DATA_CONFIG.confederations);
+            const plotHeight = VISUAL_CONFIG.canvas.height - VISUAL_CONFIG.margin.top - VISUAL_CONFIG.margin.bottom;
+            
+            // Calculate total members excluding OFC (0 members)
+            const totalMembers = Object.values(DATA_CONFIG.confederations)
+                .filter(val => val > 0)
+                .reduce((sum, val) => sum + val, 0);
+            
+            let yPos = VISUAL_CONFIG.margin.top;
+            
+            confederations.forEach((conf, i) => {
+                const members = DATA_CONFIG.confederations[conf];
+                
+                // Skip confederations with 0 members or make them minimal
+                if (members === 0) {
+                    const height = VISUAL_CONFIG.nodes.minHeight;
+                    
+                    const node = {
+                        id: `conf_${conf}`,
+                        name: conf,
+                        displayName: `${conf} (${members} members)`,
+                        x: VISUAL_CONFIG.margin.left,
+                        y: yPos,
+                        width: VISUAL_CONFIG.nodes.width,
+                        height: height,
+                        members: members,
+                        type: 'confederation',
+                        draggable: true,
+                        segments: null
+                    };
+                    
+                    confederationNodes.push(node);
+                    yPos += height + 10; // Small spacing for zero-member confederations
+                } else {
+                    // Proportional height based on membership
+                    const height = Math.max(
+                        VISUAL_CONFIG.nodes.minHeight, 
+                        (members / totalMembers) * plotHeight * 0.8 // Use 80% of available height
+                    );
+                    
+                    const node = {
+                        id: `conf_${conf}`,
+                        name: conf,
+                        displayName: `${conf} (${members} members)`,
+                        x: VISUAL_CONFIG.margin.left,
+                        y: yPos,
+                        width: VISUAL_CONFIG.nodes.width,
+                        height: height,
+                        members: members,
+                        type: 'confederation',
+                        draggable: true,
+                        segments: null
+                    };
+                    
+                    confederationNodes.push(node);
+                    yPos += height + 5; // Small spacing between confederations
+                }
+            });
+        }
+
+        function createTournamentNodes(tournamentData, nodeArray, year) {
+            const plotWidth = VISUAL_CONFIG.canvas.width - VISUAL_CONFIG.margin.left - VISUAL_CONFIG.margin.right;
+            
+            // Calculate x position for 4 columns (2010, 2014, 2018, 2022)
+            let xPosition;
+            switch(year) {
+                case 2010:
+                    xPosition = VISUAL_CONFIG.margin.left + plotWidth * 0.25;
+                    break;
+                case 2014:
+                    xPosition = VISUAL_CONFIG.margin.left + plotWidth * 0.45;
+                    break;
+                case 2018:
+                    xPosition = VISUAL_CONFIG.margin.left + plotWidth * 0.65;
+                    break;
+                case 2022:
+                    xPosition = VISUAL_CONFIG.margin.left + plotWidth * 0.85;
+                    break;
+                default:
+                    xPosition = VISUAL_CONFIG.margin.left + plotWidth * 0.5;
+            }
+            
+            let yPos = VISUAL_CONFIG.margin.top;
+            
+            tournamentData.forEach((stageData, i) => {
+                const totalTeams = Object.keys(stageData)
+                    .filter(key => key !== 'stage')
+                    .reduce((sum, conf) => sum + (stageData[conf] || 0), 0);
+                
+                if (totalTeams > 0) {
+                    const height = Math.max(VISUAL_CONFIG.nodes.minHeight, totalTeams * 8);
+                    
+                    const node = {
+                        id: `stage_${year}_${i}`,
+                        name: stageData.stage,
+                        displayName: `${year} ${stageData.stage}`,
+                        x: xPosition,
+                        y: yPos,
+                        width: VISUAL_CONFIG.nodes.width,
+                        height: height,
+                        totalTeams: totalTeams,
+                        stageData: stageData,
+                        type: `stage${year}`,
+                        year: year,
+                        draggable: true,
+                        segments: []
+                    };
+                    
+                    nodeArray.push(node);
+                    yPos += height + VISUAL_CONFIG.nodes.padding;
+                }
+            });
+        }
+
+        function createLinks() {
+            console.log('Creating links...');
+            links = [];
+            
+            const confederations = Object.keys(DATA_CONFIG.confederations);
+            
+            // Create links from confederations to all tournament years
+            createLinksToStages(confederations, confederationNodes, stage2010Nodes, 2010);
+            createLinksToStages(confederations, confederationNodes, stage2014Nodes, 2014);
+            createLinksToStages(confederations, confederationNodes, stage2018Nodes, 2018);
+            createLinksToStages(confederations, confederationNodes, stage2022Nodes, 2022);
+            
+            console.log(`Created ${links.length} links`);
+        }
+
+        function createLinksToStages(confederations, sourceNodes, targetNodes, year) {
+            confederations.forEach(conf => {
+                const confNode = sourceNodes.find(n => n.name === conf);
+                if (!confNode) return;
+                
+                targetNodes.forEach(stageNode => {
+                    const teams = stageNode.stageData[conf] || 0;
+                    if (teams > 0) {
+                        const link = {
+                            id: `link_${conf}_${year}_${stageNode.name}`,
+                            source: confNode,
+                            target: stageNode,
+                            value: teams,
+                            confederation: conf,
+                            year: year,
+                            stage: stageNode.name,
+                            bounds: null
+                        };
+                        
+                        links.push(link);
+                    }
+                });
+            });
+        }
+
+        function updateAllNodesArray() {
+            allNodes = [...confederationNodes, ...stage2010Nodes, ...stage2014Nodes, ...stage2018Nodes, ...stage2022Nodes];
+        }
+
+        // ==========================================
+        // DRAWING FUNCTIONS
+        // ==========================================
+        
+        function draw() {
+            background(245);
+            
+            // Apply panning and zoom transformations
+            push();
+            translate(VISUAL_CONFIG.panning.x, VISUAL_CONFIG.panning.y);
+            scale(VISUAL_CONFIG.zoom.level);
+            
+            // Update node segments before drawing
+            updateNodeSegments();
+            
+            // Draw all components
+            drawLinks();
+            drawNodes();
+            drawLabels();
+            
+            // Draw debug information if enabled
+            if (debugMode) {
+                drawDebugInfo();
+            }
+            
+            pop(); // Reset transformations
+        }
+
+        function updateNodeSegments() {
+            // Update segments for all tournament stage nodes
+            [...stage2010Nodes, ...stage2014Nodes, ...stage2018Nodes, ...stage2022Nodes].forEach(node => {
+                node.segments = [];
+                const confederations = Object.keys(DATA_CONFIG.confederations);
+                let currentY = node.y;
+                
+                confederations.forEach(conf => {
+                    const teams = node.stageData[conf] || 0;
+                    if (teams > 0) {
+                        const segmentHeight = (teams / node.totalTeams) * node.height;
+                        
+                        node.segments.push({
+                            confederation: conf,
+                            teams: teams,
+                            bounds: {
+                                x: node.x,
+                                y: currentY,
+                                width: node.width,
+                                height: segmentHeight
+                            }
+                        });
+                        
+                        currentY += segmentHeight;
+                    }
+                });
+            });
+        }
+
+        function drawLinks() {
+            // Calculate maximum value for proportional scaling
+            const maxValue = Math.max(...links.map(link => link.value));
+            
+            // Set stroke cap to square for flat endings
+            strokeCap(SQUARE);
+            
+            links.forEach(link => {
+                drawSingleLink(link, maxValue);
+            });
+            
+            // Reset stroke cap
+            strokeCap(ROUND);
+        }
+
+        function drawSingleLink(link, maxValue) {
+            // Calculate opacity based on selection state
+            let opacity = VISUAL_CONFIG.links.opacity.normal;
+            
+            if (selectedElement === link) {
+                opacity = VISUAL_CONFIG.links.opacity.selected;
+            } else if (selectedElement && selectedElement.type === 'confederation' && 
+                      selectedElement.name === link.confederation) {
+                opacity = VISUAL_CONFIG.links.opacity.selected;
+            } else if (selectedElement && selectedElement !== link) {
+                opacity = VISUAL_CONFIG.links.opacity.dimmed;
+            }
+            
+            // Set stroke properties
+            const [r, g, b] = VISUAL_CONFIG.colors[link.confederation];
+            const strokeWidth = VISUAL_CONFIG.links.minStrokeWidth + 
+                (link.value / maxValue) * (VISUAL_CONFIG.links.maxStrokeWidth - VISUAL_CONFIG.links.minStrokeWidth);
+            
+            stroke(r, g, b, opacity);
+            strokeWeight(strokeWidth);
+            
+            // Calculate link positions
+            const positions = calculateLinkPositions(link);
+            const { sourceX, sourceY, targetX, targetY, midX } = positions;
+            
+            // Draw bezier curve
+            noFill();
+            bezier(sourceX, sourceY, midX, sourceY, midX, targetY, targetX, targetY);
+            
+            // Store bounds for interaction
+            link.bounds = {
+                x1: sourceX,
+                y1: sourceY,
+                x2: targetX,
+                y2: targetY,
+                midX: midX,
+                strokeWidth: strokeWidth
+            };
+        }
+
+        function calculateLinkPositions(link) {
+            const sourceX = link.source.x + link.source.width;
+            const targetX = link.target.x;
+            const midX = (sourceX + targetX) / 2;
+            
+            let sourceY, targetY;
+            
+            // Calculate source Y position
+            if (link.source.type === 'confederation') {
+                sourceY = calculateConfederationLinkY(link);
+            } else {
+                sourceY = link.source.y + link.source.height / 2;
+            }
+            
+            // Calculate target Y position
+            targetY = calculateTargetLinkY(link);
+            
+            return { sourceX, sourceY, targetX, targetY, midX };
+        }
+
+        function calculateConfederationLinkY(link) {
+            // Calculate proportional position based on confederation's links
+            const confLinks = links.filter(l => 
+                l.source === link.source && 
+                l.year === link.year
+            ).sort((a, b) => {
+                const allStageNodes = [...stage2010Nodes, ...stage2014Nodes, ...stage2018Nodes, ...stage2022Nodes];
+                return allStageNodes.findIndex(n => n === a.target) - 
+                       allStageNodes.findIndex(n => n === b.target);
+            });
+            
+            let cumulativeHeight = 0;
+            const linkIndex = confLinks.indexOf(link);
+            
+            for (let i = 0; i < linkIndex; i++) {
+                cumulativeHeight += confLinks[i].value;
+            }
+            
+            const totalHeight = confLinks.reduce((sum, l) => sum + l.value, 0);
+            const proportionalY = (cumulativeHeight + link.value / 2) / totalHeight;
+            
+            return link.source.y + proportionalY * link.source.height;
+        }
+
+        function calculateTargetLinkY(link) {
+            // Find the specific confederation segment in the target node
+            if (link.target.segments) {
+                const segment = link.target.segments.find(s => s.confederation === link.confederation);
+                if (segment) {
+                    return segment.bounds.y + segment.bounds.height / 2;
+                }
+            }
+            
+            return link.target.y + link.target.height / 2;
+        }
+
+        function drawNodes() {
+            // Draw confederation nodes
+            confederationNodes.forEach(node => {
+                drawConfederationNode(node);
+            });
+            
+            // Draw tournament stage nodes with segments
+            [...stage2010Nodes, ...stage2014Nodes, ...stage2018Nodes, ...stage2022Nodes].forEach(node => {
+                drawStageNode(node);
+            });
+        }
+
+        function drawConfederationNode(node) {
+            // Calculate opacity
+            let opacity = VISUAL_CONFIG.links.opacity.normal;
+            
+            if (selectedElement === node) {
+                opacity = VISUAL_CONFIG.links.opacity.selected;
+            } else if (selectedElement && selectedElement !== node) {
+                opacity = VISUAL_CONFIG.links.opacity.dimmed;
+            }
+            
+            // Draw node rectangle
+            const [r, g, b] = VISUAL_CONFIG.colors[node.name];
+            fill(r, g, b, opacity);
+            stroke(255);
+            strokeWeight(1);
+            
+            rect(node.x, node.y, node.width, node.height);
+            
+            // Update bounds for interaction
+            node.bounds = {
+                x: node.x,
+                y: node.y,
+                width: node.width,
+                height: node.height
+            };
+        }
+
+        function drawStageNode(node) {
+            const confederations = Object.keys(DATA_CONFIG.confederations);
+            
+            node.segments.forEach(segment => {
+                // Calculate opacity
+                let opacity = VISUAL_CONFIG.links.opacity.normal;
+                
+                if (selectedElement && selectedElement.type === 'confederation' && 
+                    selectedElement.name === segment.confederation) {
+                    opacity = VISUAL_CONFIG.links.opacity.selected;
+                } else if (selectedElement && selectedElement.type === 'segment' && 
+                          selectedElement.segment.confederation === segment.confederation) {
+                    opacity = VISUAL_CONFIG.links.opacity.selected;
+                } else if (selectedElement) {
+                    opacity = VISUAL_CONFIG.links.opacity.dimmed;
+                }
+                
+                // Draw segment
+                const [r, g, b] = VISUAL_CONFIG.colors[segment.confederation];
+                fill(r, g, b, opacity);
+                stroke(255);
+                strokeWeight(0.5);
+                
+                const bounds = segment.bounds;
+                rect(bounds.x, bounds.y, bounds.width, bounds.height);
+            });
+            
+            // Update overall node bounds
+            node.bounds = {
+                x: node.x,
+                y: node.y,
+                width: node.width,
+                height: node.height
+            };
+        }
+
+        function drawLabels() {
+            fill(50);
+            noStroke();
+            
+            // Draw confederation labels
+            textAlign(LEFT, CENTER);
+            textSize(11);
+            confederationNodes.forEach(node => {
+                text(node.displayName, node.x + node.width + 10, node.y + node.height / 2);
+            });
+            
+            // Draw stage labels for all years
+            textAlign(CENTER, CENTER);
+            [...stage2010Nodes, ...stage2014Nodes, ...stage2018Nodes, ...stage2022Nodes].forEach(node => {
+                text(node.displayName, node.x + node.width / 2, node.y - 15);
+            });
+        }
+
+        function drawDebugInfo() {
+            // Save current transformation state
+            push();
+            
+            // Reset transformations for UI elements
+            resetMatrix();
+            
+            // Draw node boundaries and IDs
+            stroke(255, 0, 0, 100);
+            strokeWeight(1);
+            noFill();
+            
+            allNodes.forEach(node => {
+                if (node.bounds) {
+                    // Transform bounds for current view
+                    const screenX = node.bounds.x * VISUAL_CONFIG.zoom.level + VISUAL_CONFIG.panning.x;
+                    const screenY = node.bounds.y * VISUAL_CONFIG.zoom.level + VISUAL_CONFIG.panning.y;
+                    const screenW = node.bounds.width * VISUAL_CONFIG.zoom.level;
+                    const screenH = node.bounds.height * VISUAL_CONFIG.zoom.level;
+                    
+                    rect(screenX, screenY, screenW, screenH);
+                    
+                    fill(255, 0, 0);
+                    noStroke();
+                    textAlign(CENTER, CENTER);
+                    textSize(8);
+                    text(node.id, screenX + screenW/2, screenY - 5);
+                }
+            });
+            
+            // Update debug info panel
+            const debugText = `
+                Viewport: ${VISUAL_CONFIG.viewport.width}x${VISUAL_CONFIG.viewport.height}
+                Virtual: ${VISUAL_CONFIG.canvas.width}x${VISUAL_CONFIG.canvas.height}
+                Pan: (${VISUAL_CONFIG.panning.x.toFixed(1)}, ${VISUAL_CONFIG.panning.y.toFixed(1)})
+                Zoom: ${VISUAL_CONFIG.zoom.level.toFixed(2)}
+                Nodes: ${allNodes.length} | Links: ${links.length}
+                Selected: ${selectedElement ? selectedElement.id || selectedElement.type : 'None'}
+                Dragged: ${draggedNode ? draggedNode.id : 'None'}
+                Mouse: (${mouseX.toFixed(0)}, ${mouseY.toFixed(0)})
+                Transformed: (${getTransformedMousePosition().x.toFixed(0)}, ${getTransformedMousePosition().y.toFixed(0)})
+                Panning: ${VISUAL_CONFIG.panning.isDragging ? 'Yes' : 'No'}
+            `;
+            debugInfo.html(debugText.trim());
+            
+            pop(); // Restore transformation state
+        }
+
+        // ==========================================
+        // PANNING AND ZOOM FUNCTIONS
+        // ==========================================
+        
+        function startPanning() {
+            isPanning = true;
+            VISUAL_CONFIG.panning.isDragging = true;
+            VISUAL_CONFIG.panning.lastMouseX = mouseX;
+            VISUAL_CONFIG.panning.lastMouseY = mouseY;
+            console.log('Started panning');
+        }
+
+        function updatePanning() {
+            if (VISUAL_CONFIG.panning.isDragging) {
+                const deltaX = (mouseX - VISUAL_CONFIG.panning.lastMouseX) * VISUAL_CONFIG.panning.sensitivity;
+                const deltaY = (mouseY - VISUAL_CONFIG.panning.lastMouseY) * VISUAL_CONFIG.panning.sensitivity;
+                
+                VISUAL_CONFIG.panning.x += deltaX;
+                VISUAL_CONFIG.panning.y += deltaY;
+                
+                // Constrain panning to reasonable bounds
+                const maxPanX = VISUAL_CONFIG.viewport.width * 0.5;
+                const maxPanY = VISUAL_CONFIG.viewport.height * 0.5;
+                const minPanX = -(VISUAL_CONFIG.canvas.width * VISUAL_CONFIG.zoom.level - VISUAL_CONFIG.viewport.width * 0.5);
+                const minPanY = -(VISUAL_CONFIG.canvas.height * VISUAL_CONFIG.zoom.level - VISUAL_CONFIG.viewport.height * 0.5);
+                
+                VISUAL_CONFIG.panning.x = constrain(VISUAL_CONFIG.panning.x, minPanX, maxPanX);
+                VISUAL_CONFIG.panning.y = constrain(VISUAL_CONFIG.panning.y, minPanY, maxPanY);
+                
+                VISUAL_CONFIG.panning.lastMouseX = mouseX;
+                VISUAL_CONFIG.panning.lastMouseY = mouseY;
+            }
+        }
+
+        function stopPanning() {
+            isPanning = false;
+            VISUAL_CONFIG.panning.isDragging = false;
+            console.log('Stopped panning');
+        }
+
+        function handleZoom(delta) {
+            const zoomFactor = 1 + (delta * VISUAL_CONFIG.zoom.sensitivity);
+            const newZoom = VISUAL_CONFIG.zoom.level * zoomFactor;
+            
+            VISUAL_CONFIG.zoom.level = constrain(newZoom, VISUAL_CONFIG.zoom.min, VISUAL_CONFIG.zoom.max);
+            
+            console.log(`Zoom level: ${VISUAL_CONFIG.zoom.level.toFixed(2)}`);
+        }
+
+        function getTransformedMousePosition() {
+            // Transform mouse coordinates considering panning and zoom
+            const transformedX = (mouseX - VISUAL_CONFIG.panning.x) / VISUAL_CONFIG.zoom.level;
+            const transformedY = (mouseY - VISUAL_CONFIG.panning.y) / VISUAL_CONFIG.zoom.level;
+            
+            return { x: transformedX, y: transformedY };
+        }
+
+        // ==========================================
+        // INTERACTION FUNCTIONS
+        // ==========================================
+        
+        function mouseMoved() {
+            if (VISUAL_CONFIG.panning.isDragging) {
+                updatePanning();
+                return;
+            }
+            
+            if (draggedNode) return; // Don't show tooltips while dragging nodes
+            
+            const hoveredElement = getHoveredElement();
+            if (hoveredElement) {
+                showTooltip(hoveredElement);
+            } else {
+                hideTooltip();
+            }
+        }
+
+        function mousePressed() {
+            // Right click for panning
+            if (mouseButton === RIGHT) {
+                startPanning();
+                return false; // Prevent context menu
+            }
+            
+            // Left click for interaction
+            if (mouseButton === LEFT) {
+                const clickedElement = getHoveredElement();
+                
+                if (clickedElement) {
+                    handleElementClick(clickedElement);
+                } else {
+                    selectedElement = null;
+                }
+                
+                // Start dragging if clicking on a draggable node
+                const clickedNode = getClickedNode();
+                if (clickedNode && clickedNode.draggable) {
+                    startDragging(clickedNode);
+                }
+            }
+        }
+
+        function mouseDragged() {
+            if (VISUAL_CONFIG.panning.isDragging) {
+                updatePanning();
+                return;
+            }
+            
+            if (draggedNode) {
+                const transformed = getTransformedMousePosition();
+                updateNodePosition(draggedNode, transformed.x - dragOffset.x, transformed.y - dragOffset.y);
+                hideTooltip(); // Hide tooltip while dragging
+            }
+        }
+
+        function mouseReleased() {
+            if (VISUAL_CONFIG.panning.isDragging) {
+                stopPanning();
+            }
+            
+            if (draggedNode) {
+                console.log(`Stopped dragging ${draggedNode.id}`);
+                draggedNode = null;
+            }
+        }
+
+        function mouseWheel(event) {
+            // Handle zoom with mouse wheel
+            const delta = event.delta > 0 ? -1 : 1; // Invert for natural zoom direction
+            handleZoom(delta);
+            return false; // Prevent page scroll
+        }
+
+        function keyPressed() {
+            // Toggle debug mode with 'D' key
+            if (key === 'd' || key === 'D') {
+                debugMode = !debugMode;
+                if (debugMode) {
+                    debugInfo.style('display', 'block');
+                    console.log('Debug mode enabled');
+                } else {
+                    debugInfo.style('display', 'none');
+                    console.log('Debug mode disabled');
+                }
+            }
+            
+            // Reset view with 'R' key
+            if (key === 'r' || key === 'R') {
+                VISUAL_CONFIG.panning.x = 0;
+                VISUAL_CONFIG.panning.y = 0;
+                VISUAL_CONFIG.zoom.level = 1.0;
+                console.log('View reset to default');
+            }
+            
+            // Center view with 'C' key
+            if (key === 'c' || key === 'C') {
+                centerView();
+            }
+        }
+
+        function centerView() {
+            // Center the virtual canvas in the viewport
+            VISUAL_CONFIG.panning.x = (VISUAL_CONFIG.viewport.width - VISUAL_CONFIG.canvas.width * VISUAL_CONFIG.zoom.level) / 2;
+            VISUAL_CONFIG.panning.y = (VISUAL_CONFIG.viewport.height - VISUAL_CONFIG.canvas.height * VISUAL_CONFIG.zoom.level) / 2;
+            console.log('View centered');
+        }
+
+        // ==========================================
+        // HELPER FUNCTIONS
+        // ==========================================
+        
+        function getHoveredElement() {
+            const transformed = getTransformedMousePosition();
+            
+            // Check confederation nodes
+            for (let node of confederationNodes) {
+                if (isPointInRect(transformed.x, transformed.y, node.bounds)) {
+                    return node;
+                }
+            }
+            
+            // Check stage nodes and segments for all years
+            for (let node of [...stage2010Nodes, ...stage2014Nodes, ...stage2018Nodes, ...stage2022Nodes]) {
+                if (node.segments) {
+                    for (let segment of node.segments) {
+                        if (isPointInRect(transformed.x, transformed.y, segment.bounds)) {
+                            return {
+                                type: 'segment',
+                                node: node,
+                                segment: segment
+                            };
+                        }
+                    }
+                }
+            }
+            
+            // Check links
+            for (let link of links) {
+                if (link.bounds && isPointNearBezier(transformed.x, transformed.y, link.bounds)) {
+                    return link;
+                }
+            }
+            
+            return null;
+        }
+
+        function getClickedNode() {
+            const transformed = getTransformedMousePosition();
+            
+            for (let node of allNodes) {
+                if (node.bounds && isPointInRect(transformed.x, transformed.y, node.bounds)) {
+                    return node;
+                }
+            }
+            return null;
+        }
+
+        function isPointInRect(px, py, bounds) {
+            return px >= bounds.x && px <= bounds.x + bounds.width &&
+                   py >= bounds.y && py <= bounds.y + bounds.height;
+        }
+
+        function isPointNearBezier(px, py, bounds) {
+            if (!bounds) return false;
+            
+            const distToStart = dist(px, py, bounds.x1, bounds.y1);
+            const distToEnd = dist(px, py, bounds.x2, bounds.y2);
+            const distToMid = dist(px, py, bounds.midX, (bounds.y1 + bounds.y2) / 2);
+            
+            const interactionRadius = Math.max(10, bounds.strokeWidth / 2 + 5);
+            
+            return distToStart < interactionRadius || distToEnd < interactionRadius || distToMid < interactionRadius;
+        }
+
+        function handleElementClick(element) {
+            selectedElement = (selectedElement === element) ? null : element;
+            console.log('Selected:', selectedElement ? (selectedElement.id || selectedElement.type) : 'None');
+        }
+
+        function startDragging(node) {
+            const transformed = getTransformedMousePosition();
+            draggedNode = node;
+            dragOffset.x = transformed.x - node.x;
+            dragOffset.y = transformed.y - node.y;
+            console.log(`Started dragging ${node.id}`);
+        }
+
+        function updateNodePosition(node, newX, newY) {
+            // Constrain node position to virtual canvas bounds
+            const constrainedX = constrain(newX, 0, VISUAL_CONFIG.canvas.width - node.width);
+            const constrainedY = constrain(newY, 0, VISUAL_CONFIG.canvas.height - node.height);
+            
+            node.x = constrainedX;
+            node.y = constrainedY;
+        }
+
+        function showTooltip(element) {
+            let tooltipText = '';
+            
+            if (element.type === 'confederation') {
+                tooltipText = `${element.name}<br/>Total Members: ${element.members}`;
+            } else if (element.type === 'segment') {
+                tooltipText = `${element.segment.confederation} in ${element.node.displayName}<br/>Teams: ${element.segment.teams}`;
+            } else if (element.type && element.type.startsWith('stage')) {
+                tooltipText = `${element.displayName}<br/>Total Teams: ${element.totalTeams}`;
+            } else if (element.confederation) {
+                // Link
+                tooltipText = `${element.confederation} → ${element.year} ${element.stage}<br/>Teams: ${element.value}`;
+            }
+            
+            tooltip.html(tooltipText);
+            tooltip.style('display', 'block');
+            tooltip.style('left', (mouseX + 10) + 'px');
+            tooltip.style('top', (mouseY - 30) + 'px');
+        }        function showTooltip(element) {
+            let tooltipText = '';
+            
+            if (element.type === 'confederation') {
+                tooltipText = `${element.name}<br/>Total Members: ${element.members}`;
+            } else if (element.type === 'segment') {
+                tooltipText = `${element.segment.confederation} in ${element.node.displayName}<br/>Teams: ${element.segment.teams}`;
+            } else if (element.type && element.type.startsWith('stage')) {
+                tooltipText = `${element.displayName}<br/>Total Teams: ${element.totalTeams}`;
+            } else if (element.confederation) {
+                // Link
+                tooltipText = `${element.confederation} → ${element.year} ${element.stage}<br/>Teams: ${element.value}`;
+            }
+            
+            tooltip.html(tooltipText);
+            tooltip.style('display', 'block');
+            tooltip.style('left', (mouseX + 10) + 'px');
+            tooltip.style('top', (mouseY - 30) + 'px');
+        }
+
+        function hideTooltip() {
+            tooltip.style('display', 'none');
+        }
+
+        // ==========================================
+        // UTILITY FUNCTIONS
+        // ==========================================
+        
+        function logSystemInfo() {
+            console.log('=== Sankey Diagram System Info ===');
+            console.log(`Canvas: ${VISUAL_CONFIG.viewport.width}x${VISUAL_CONFIG.viewport.height}`);
+            console.log(`Virtual: ${VISUAL_CONFIG.canvas.width}x${VISUAL_CONFIG.canvas.height}`);
+            console.log(`Confederation nodes: ${confederationNodes.length}`);
+            console.log(`2010 stage nodes: ${stage2010Nodes.length}`);
+            console.log(`2014 stage nodes: ${stage2014Nodes.length}`);
+            console.log(`2018 stage nodes: ${stage2018Nodes.length}`);
+            console.log(`2022 stage nodes: ${stage2022Nodes.length}`);
+            console.log(`Total links: ${links.length}`);
+            console.log(`Pan: (${VISUAL_CONFIG.panning.x.toFixed(1)}, ${VISUAL_CONFIG.panning.y.toFixed(1)})`);
+            console.log(`Zoom: ${VISUAL_CONFIG.zoom.level.toFixed(2)}`);
+            console.log(`Debug mode: ${debugMode ? 'Enabled' : 'Disabled'}`);
+            console.log('=== End System Info ===');
+        }
+
+        // Initialize system info logging
+        setTimeout(logSystemInfo, 1000);
+    </script>
+</body>
+</html>
